@@ -39,7 +39,6 @@ class MOF:
             f.write("loop_\n")
             f.write("_atom_site_label\n")
             f.write("_atom_site_type_symbol\n")
-            f.write("_atom_site_description\n")
             f.write("_atom_site_fract_x\n")
             f.write("_atom_site_fract_y\n")
             f.write("_atom_site_fract_z\n")
@@ -49,7 +48,7 @@ class MOF:
             frac_coords = self.atoms.get_scaled_positions()
             for i, (sym, pos) in enumerate(zip(symbols, frac_coords)):
                 label = "{}{}".format(sym, i)
-                f.write("{} {} None {:.5f} {:.5f} {:.5f} 0.0\n".
+                f.write("{} {} {:.5f} {:.5f} {:.5f} 0.0\n".
                         format(label, sym, *pos))
 
             f.write("loop_\n")
