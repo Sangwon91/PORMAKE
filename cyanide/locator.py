@@ -5,26 +5,9 @@ import numpy as np
 import sklearn
 import sklearn.cluster
 
-from .third_party.Bio import SVDSuperimposer
+from .third_party.rmsd import rmsd
 
 class Locator:
-    def __init__(self):
-        self.superimposer = SVDSuperimposer()
-
-    def reduce_points(self, points):
-        def centers(p, n):
-            kmeans = sklearn.cluster.KMeans(n_clusters=n, random_state=0)
-            return kmeans.fit(p).cluster_centers_
-
-        if len(points) <= 8:
-            return points
-        elif len(points) == 10:
-            return centers(points, 4)
-        elif len(points) == 12:
-            return centers(points, 8)
-        elif len(points) == 24:
-            return centers(points, 8)
-
     def locate(self, target, bb):
         """
         Locate building block (bb) to target_points
@@ -33,33 +16,25 @@ class Locator:
         Return:
             located building block and RMS.
         """
-        target_points = target.positions
-        points = bb.local_structure().positions
+        local0 = target
+        local1 = bb.local_structure()
 
-        # Reduce points for fast calculations.
-        target_points = self.reduce_points(target_points)
-        points = self.reduce_points(points)
+        p_atoms = np.array(local0.atoms.symbols)
+        p_coord = local0.atoms.positions
 
-        # Alias.
-        imposer = self.superimposer
-        # Variable to find minimum RMS superimposition.
-        min_rms = 1e30
-        min_rms_transform = None
-        # Calculate all possible permutations.
-        for p in itertools.permutations(points):
-            # Cast to numpy array.
-            p = np.array(p)
+        q_atoms = np.array(local1.atoms.symbols)
+        q_coord = local1.atoms.positions
 
-            imposer.set(target_points, p)
-            imposer.run()
+        q_review = rmsd.reorder_hungarian(p_atoms, q_atoms, p_coord, q_coord)
 
-            rms = imposer.get_rms()
-            if rms < min_rms:
-                min_rms = rms
-                min_rms_transform = imposer.get_rotran()
+        q_atoms = q_atoms[q_review]
+        q_coord = q_coord[q_review]
 
-        rot, trans = min_rms_transform
+        U = rmsd.kabsch(q_coord, p_coord)
+
         bb = bb.copy()
-        bb.atoms.set_positions(bb.atoms.positions @ rot + trans)
+        bb.atoms.set_positions(bb.atoms.positions @ U)
 
-        return bb, min_rms
+        rmsd_val = rmsd.kabsch_rmsd(p_coord, q_coord)
+
+        return bb, rmsd_val
