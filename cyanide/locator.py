@@ -5,7 +5,7 @@ import numpy as np
 import sklearn
 import sklearn.cluster
 
-from src.Bio import SVDSuperimposer
+from .third_party.Bio import SVDSuperimposer
 
 class Locator:
     def __init__(self):
