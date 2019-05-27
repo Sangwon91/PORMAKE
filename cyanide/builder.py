@@ -10,13 +10,25 @@ class Builder:
         self.scaler = Scaler()
         self.locator = Locator()
 
-    def build(self, topology, node_bbs, edge_bb=None):
+    def build(self, topology, node_bbs, edge_bb=None, verbose=False):
         """
         The node_bbs must be given with proper order.
         Same as node type order in topology.
         """
+        if verbose:
+            echo = print
+        else:
+            echo = lambda x: None
+
         assert topology.n_node_types == len(node_bbs)
 
+        # Calculate bonds before start.
+        #echo("Calculating bonds in building blocks...")
+        #for i in range(len(node_bbs)):
+        #    node_bbs[i].bonds
+        #edge_bb.bonds
+
+        echo("Calculating scaling factor...")
         # Get scaling factor.
         scaling_factor = self.scaler.calculate(topology, node_bbs, edge_bb)
         #print(scaling_factor)
@@ -24,6 +36,7 @@ class Builder:
         # Locate nodes and edges.
         located_bbs = [None for _ in topology.atoms]
 
+        echo("Placing nodes...")
         # Locate nodes.
         for t, node_bb in enumerate(node_bbs):
             # t: node type.
@@ -36,6 +49,7 @@ class Builder:
                 center = topology.atoms[i].position * scaling_factor
                 located_node.set_center(center)
                 located_bbs[i] = located_node
+                echo("Node {} is located, RMSD: {:.2E}".format(i, rms))
 
         # Locate edges.
         located_nodes = located_bbs[:topology.n_nodes]
@@ -63,7 +77,10 @@ class Builder:
 
                 located_edge.set_center(center)
                 located_bbs[i] = located_edge
+                echo("Edge {} is located, RMSD: {:.2E}".format(i, rms))
 
+        echo("Finding bonds in generated MOF...")
+        echo("Finding bonds in building blocks...")
         # Build bonds of generated MOF.
         index_offsets = [None for _ in range(topology.n_all_points)]
         index_offsets[0] = 0
@@ -79,6 +96,7 @@ class Builder:
             bb_bonds.append(bb.bonds + offset)
         bb_bonds = np.concatenate(bb_bonds, axis=0)
 
+        echo("Finding bonds between building blocks...")
         # Find bond between building blocks.
         # Calculate all permutations before.
         permutations = []
@@ -136,11 +154,15 @@ class Builder:
                 bonds.append((e2, a2))
             else:
                 bonds.append((a1, a2))
+
+            echo("Bonds on topology edge {} are connected.".format(j))
+
         bonds = np.array(bonds)
 
         # All bonds in generated MOF.
         all_bonds = np.concatenate([bb_bonds, bonds], axis=0)
 
+        echo("Making MOF instance...")
         # Make full atoms from located building blocks.
         bb_atoms_list = [v.atoms for v in located_bbs if v is not None]
 
@@ -149,5 +171,6 @@ class Builder:
         mof_atoms.set_cell(topology.atoms.cell*scaling_factor)
 
         mof = MOF(mof_atoms, all_bonds)
+        echo("Done.")
 
         return mof
