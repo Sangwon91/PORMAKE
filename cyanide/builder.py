@@ -23,10 +23,10 @@ class Builder:
         assert topology.n_node_types == len(node_bbs)
 
         # Calculate bonds before start.
-        #echo("Calculating bonds in building blocks...")
-        #for i in range(len(node_bbs)):
-        #    node_bbs[i].bonds
-        #edge_bb.bonds
+        echo("Calculating bonds in building blocks...")
+        for i in range(len(node_bbs)):
+            node_bbs[i].bonds
+        edge_bb.bonds
 
         echo("Calculating scaling factor...")
         # Get scaling factor.
