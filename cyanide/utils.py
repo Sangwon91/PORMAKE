@@ -116,7 +116,8 @@ def read_cgd(filename, node_symbol="C", edge_center_symbol="O"):
     del atoms[list(set(J))]
 
     if len(J) > 0:
-        warnings.warn("Overlapped positions are removed", J)
+        msg = "Overlapped positions are removed: index {}".format(set(J))
+        warnings.warn(msg)
 
     return atoms
 
