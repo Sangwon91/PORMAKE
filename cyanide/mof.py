@@ -32,9 +32,9 @@ class MOF:
             f.write("_cell_length_a     {:.3f}\n".format(a))
             f.write("_cell_length_b     {:.3f}\n".format(b))
             f.write("_cell_length_c     {:.3f}\n".format(c))
-            f.write("_cell_angle_alpha {:.3f}\n".format(alpha))
-            f.write("_cell_angle_beta  {:.3f}\n".format(beta))
-            f.write("_cell_angle_gamma {:.3f}\n".format(gamma))
+            f.write("_cell_angle_alpha  {:.3f}\n".format(alpha))
+            f.write("_cell_angle_beta   {:.3f}\n".format(beta))
+            f.write("_cell_angle_gamma  {:.3f}\n".format(gamma))
 
             f.write("loop_\n")
             f.write("_atom_site_label\n")
@@ -58,7 +58,7 @@ class MOF:
             f.write("_geom_bond_site_symmetry_2\n")
             f.write("_ccdc_geom_bond_type\n") # ?????????
 
-            # Get images
+            # Get images and distances.
             I, J, S, D = ase.neighborlist.neighbor_list(
                             "ijSd", self.atoms, cutoff=6.0)
             image_dict = {}
