@@ -106,6 +106,11 @@ class Topology:
     def n_edge_types(self):
         return self._n_edge_types
 
+    def get_edge_length(self, i):
+        n1, n2 = self.neighbor_list[i]
+        diff = n1.distance_vector - n2.distance_vector
+        return np.linalg.norm(diff)
+
     def view(self, show_edge_centers=True, repeat=1, **kwargs):
         atoms = self.atoms.copy()
 
