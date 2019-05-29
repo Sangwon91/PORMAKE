@@ -18,6 +18,33 @@ class Topology:
         self.name = self.atoms.info["name"]
         self.spacegroup = self.atoms.info["spacegroup"]
 
+        # Build indices of nodes and edges.
+        self._node_indices = \
+            np.argwhere(self.atoms.get_tags() != -1).reshape(-1)
+        self._edge_indices = \
+            np.argwhere(self.atoms.get_tags() == -1).reshape(-1)
+
+        # Build node type.
+        self._node_types = self.atoms.get_tags()
+
+        # Build edge type.
+        self._edge_types = [(-1, -1) for _ in range(self.n_all_points)]
+        for i in self.edge_indices:
+            n = self.neighbor_list[i]
+
+            i0 = n[0].index
+            i1 = n[1].index
+
+            t0 = self.get_node_type(i0)
+            t1 = self.get_node_type(i1)
+
+            # Sort.
+            if t0 > t1:
+                t0, t1 = t1, t0
+
+            self._edge_types[i] = (t0, t1)
+        self._edge_types = np.array(self._edge_types)
+
     def copy(self):
         return copy.deepcopy(self)
 
@@ -31,7 +58,18 @@ class Topology:
         return LocalStructure(positions, indices)
 
     def get_node_type(self, i):
-        return self.atoms.get_tags()[i]
+        return self._node_types[i]
+
+    def get_edge_type(self, i):
+        return self._edge_types[i]
+
+    @property
+    def node_types(self):
+        return self._node_types
+
+    @property
+    def edge_types(self):
+        return self._edge_types
 
     @property
     def n_all_points(self):
@@ -39,11 +77,10 @@ class Topology:
 
     @property
     def node_indices(self):
-        return np.argwhere(self.atoms.get_tags() != -1).reshape(-1)
-
+        return self._node_indices
     @property
     def edge_indices(self):
-        return np.argwhere(self.atoms.get_tags() == -1).reshape(-1)
+        return self._edge_indices
 
     @property
     def n_nodes(self):
