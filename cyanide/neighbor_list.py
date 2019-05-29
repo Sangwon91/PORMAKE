@@ -23,11 +23,12 @@ class NeighborList:
         # Should be changed "0.5 threshold" to "nearest 2 node for edge".
         # Because there are edges length != 1.0 (e.g. ith-d).
         # It occurs because the cgd file "try to" make all edge length to 1.0.
-        eps = 1e-3
+
+        # C for nodes and O for edges.
         cutoffs = {
             ("C", "C"): 0.0,
             ("O", "O"): 0.0,
-            ("C", "O"): 0.5+eps,
+            ("C", "O"): 1.0,
         }
 
         I, J, D = ase.neighborlist.neighbor_list("ijD", atoms, cutoff=cutoffs)
@@ -38,15 +39,24 @@ class NeighborList:
         for i, j, d in zip(I, J, D):
             self.neighbor_list[i].append(Neighbor(j, d))
 
-        """
         # Pick nearest 2 nodes.
         edge_indices = np.argwhere(atoms.symbols == "O").reshape(-1)
-
-        for i, l in enumerate(self.neighbor_list):
+        for i in edge_indices:
+            l = self.neighbor_list[i]
+            # Pick 2 shortest distances
             l.sort(key=lambda x: np.linalg.norm(x.distance_vector))
-            #l = l[:2]
-            print([np.linalg.norm(n.distance_vector) for n in l])
-        """
+            self.neighbor_list[i] = l[:2]
+
+        # Remove invalid neighbors of nodes.
+        node_indices = np.argwhere(atoms.symbols == "C").reshape(-1)
+        for i in node_indices:
+            l = []
+            for ni in self.neighbor_list[i]:
+                j = ni.index
+                # Check cross reference.
+                if i in [nj.index for nj in self.neighbor_list[j]]:
+                    l.append(ni)
+            self.neighbor_list[i] = l
 
     def __getitem__(self, i):
         return self.neighbor_list[i]
