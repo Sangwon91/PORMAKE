@@ -7,7 +7,18 @@ import ase.neighborlist
 class MOF:
     def __init__(self, atoms, bonds):
         atoms = atoms.copy()
-        atoms.wrap()
+        #atoms.wrap(eps=1e-4)
+        # Wrap atoms.
+        eps = 1e-4
+        scaled_positions = atoms.get_scaled_positions()
+        scaled_positions = \
+            np.where(scaled_positions > 1.0-eps,
+                     np.zeros_like(scaled_positions),
+                     scaled_positions,
+            )
+        atoms.set_scaled_positions(scaled_positions)
+
+        # Save data to attributes.
         self.atoms = atoms
         self.bonds = bonds.copy()
 
@@ -65,7 +76,7 @@ class MOF:
             distance_dict = {}
             origin = np.array([5, 5, 5])
             for i, j, s, d in zip(I, J, S, D):
-                image_dict[(i, j)] = s + origin
+                image_dict[(i, j)] = origin + s
                 distance_dict[(i, j)] = d
 
             for bond in self.bonds:
