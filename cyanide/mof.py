@@ -16,7 +16,7 @@ class MOF:
         Write MOF in cif format.
         """
         with open(filename, "w") as f:
-            f.write("TEST\n")
+            f.write("data_GENERATED_BY_CYANIDE\n")
 
             f.write("_symmetry_space_group_name_H-M    P1\n")
             f.write("_symmetry_Int_Tables_number       1\n")
