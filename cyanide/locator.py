@@ -2,9 +2,6 @@ import itertools
 
 import numpy as np
 
-import sklearn
-import sklearn.cluster
-
 from .third_party.rmsd import rmsd
 
 class Locator:
@@ -25,6 +22,7 @@ class Locator:
 
         q_atoms = np.array(local1.atoms.symbols)
 
+        # Serching best orientation over Euler angles.
         alpha = np.linspace(0, 360, 4)
         beta = np.linspace(0, 180, 4)
         gamma = np.linspace(0, 360, 4)
