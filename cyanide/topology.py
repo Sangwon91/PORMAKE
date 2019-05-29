@@ -18,6 +18,13 @@ class Topology:
         self.name = self.atoms.info["name"]
         self.spacegroup = self.atoms.info["spacegroup"]
 
+        # Calculate properties.
+        self.calculate_properties()
+
+    def copy(self):
+        return copy.deepcopy(self)
+
+    def calculate_properties(self):
         # Build indices of nodes and edges.
         self._node_indices = \
             np.argwhere(self.atoms.get_tags() != -1).reshape(-1)
@@ -45,8 +52,9 @@ class Topology:
             self._edge_types[i] = (t0, t1)
         self._edge_types = np.array(self._edge_types)
 
-    def copy(self):
-        return copy.deepcopy(self)
+        # Calculate the number of node and edge types.
+        self._n_node_types = np.unique(self.node_types).shape[0] - 1
+        self._n_edge_types = np.unique(self.edge_types, axis=0).shape[0] - 1
 
     def local_structure(self, i):
         indices = []
@@ -92,7 +100,11 @@ class Topology:
 
     @property
     def n_node_types(self):
-        return len(set(self.atoms.get_tags())) - 1
+        return self._n_node_types
+
+    @property
+    def n_edge_types(self):
+        return self._n_edge_types
 
     def view(self, show_edge_centers=True, repeat=1, **kwargs):
         atoms = self.atoms.copy()
