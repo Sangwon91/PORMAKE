@@ -14,6 +14,9 @@ class Topology:
     def __init__(self, cgd_file):
         self.atoms = read_cgd(filename=cgd_file)
         self.neighbor_list = NeighborList(self.atoms)
+        # Save additional information.
+        self.name = self.atoms.info["name"]
+        self.spacegroup = self.atoms.info["spacegroup"]
 
     def copy(self):
         return copy.deepcopy(self)

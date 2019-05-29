@@ -100,6 +100,12 @@ def read_cgd(filename, node_symbol="C", edge_center_symbol="O"):
                     site_properties=site_properties,
                 )
 
+    # Add information.
+    info = {
+        "spacegroup": spacegroup,
+        "name": name,
+    }
+
     # Cast mg.Structure to ase.Atoms
     atoms = ase.Atoms(
         symbols=[s.name for s in structure.species],
@@ -107,6 +113,7 @@ def read_cgd(filename, node_symbol="C", edge_center_symbol="O"):
         cell=structure.lattice.matrix,
         tags=structure.site_properties["type"],
         pbc=True,
+        info=info,
     )
 
     # Remove overlap
