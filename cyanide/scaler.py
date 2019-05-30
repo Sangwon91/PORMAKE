@@ -23,6 +23,9 @@ class Scaler:
             edge_bbs (Dict of BuildingBlocks): dict of edge building blocks.
                 The key of the dict is (i, j) where i and j are node types.
         """
+        if edge_bbs is None:
+            edge_bbs = defaultdict(lambda: None)
+
         bond_length = 1.5
 
         # Get unique types of topology edges.
@@ -30,6 +33,9 @@ class Scaler:
             topology.edge_types[topology.edge_indices],
             axis=0,
         )
+
+        # Cast edge_bbs to defaultdict.
+        edge_bbs = defaultdict(lambda: None, edge_bbs)
 
         # Calculate edge lengths of each type.
         edge_lengths = {}
@@ -41,10 +47,11 @@ class Scaler:
 
             length = len_i + len_j + bond_length
 
-            if edge_bbs is not None:
+            if edge_bbs[(i, j)] is not None:
                 length += edge_bbs[(i, j)].length + bond_length
 
             edge_lengths[(i, j)] = length
+        print("EL:\n", edge_lengths)
 
         min_length = min(edge_lengths.values())
 
