@@ -34,35 +34,44 @@ class NeighborList:
         I, J, D = ase.neighborlist.neighbor_list("ijD", atoms, cutoff=cutoffs)
 
         self.max_index = np.max(I)
-        self.neighbor_list = [[] for _ in range(self.max_index+1)]
+        self._neighbor_list = [[] for _ in range(self.max_index+1)]
 
         for i, j, d in zip(I, J, D):
-            self.neighbor_list[i].append(Neighbor(j, d))
+            self._neighbor_list[i].append(Neighbor(j, d))
 
         # Pick nearest 2 nodes.
         edge_indices = np.argwhere(atoms.symbols == "O").reshape(-1)
         for i in edge_indices:
-            l = self.neighbor_list[i]
+            l = self._neighbor_list[i]
             # Pick 2 shortest distances
             l.sort(key=lambda x: np.linalg.norm(x.distance_vector))
-            self.neighbor_list[i] = l[:2]
+            self._neighbor_list[i] = l[:2]
 
         # Remove invalid neighbors of nodes.
         node_indices = np.argwhere(atoms.symbols == "C").reshape(-1)
         for i in node_indices:
             l = []
-            for ni in self.neighbor_list[i]:
+            for ni in self._neighbor_list[i]:
                 j = ni.index
                 # Check cross reference.
-                if i in [nj.index for nj in self.neighbor_list[j]]:
+                if i in [nj.index for nj in self._neighbor_list[j]]:
                     l.append(ni)
-            self.neighbor_list[i] = l
+            self._neighbor_list[i] = l
 
     def __getitem__(self, i):
-        return self.neighbor_list[i]
+        return self._neighbor_list[i]
 
     def __iter__(self):
-        return iter(self.neighbor_list)
+        return iter(self._neighbor_list)
+
+    def set_data(self, data):
+        new_list = []
+        for l in data:
+            new_list.append([])
+            for n in l:
+                new_list[-1].append(Neighbor(n[0], n[1]))
+
+        self._neighbor_list = new_list
 
     def __repr__(self):
         output = ""
