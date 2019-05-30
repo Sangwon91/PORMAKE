@@ -1,3 +1,4 @@
+from .scaler import Scaler
 from .builder import Builder
 from .locator import Locator
 from .topology import Topology
