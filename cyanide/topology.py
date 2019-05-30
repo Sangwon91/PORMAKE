@@ -106,7 +106,7 @@ class Topology:
     def n_edge_types(self):
         return self._n_edge_types
 
-    def get_neigbor_indices(self, i):
+    def get_neighbor_indices(self, i):
         return [n.index for n in self.neighbor_list[i]]
 
     def get_edge_length(self, i):
