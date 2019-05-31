@@ -48,7 +48,7 @@ class Scaler:
             length = len_i + len_j + bond_length
 
             if edge_bbs[(i, j)] is not None:
-                length += edge_bbs[(i, j)].length + bond_length
+                length += 2.0*edge_bbs[(i, j)].length + bond_length
 
             edge_lengths[(i, j)] = length
         print("EL:\n", edge_lengths)
@@ -242,17 +242,21 @@ class Scaler:
 
         # Calculate adjust_ratio.
         # The adjust_ratio make all edge length > target length.
-        norms, cos = calc_norms_and_cos(s, c)
-        norms = norms.numpy()
-        cos = cos.numpy()
-        adjust_ratio = np.max(target_norms / norms)
+        #norms, cos = calc_norms_and_cos(s, c)
+        #norms = norms.numpy()
+        #cos = cos.numpy()
+        #adjust_ratio = np.max(target_norms / norms)
         # Adjust cell to make sure all edges are longer than target length.
-        c *= adjust_ratio
+        #c *= adjust_ratio
 
         # Check all lengths and angles.
         norms, cos = calc_norms_and_cos(s, c)
         norms = norms.numpy()
         cos = cos.numpy()
+
+        print(np.array(list(
+            zip(target_norms, norms)
+        )))
 
         # Return to normalized scale to real scale.
         c *= min_length
