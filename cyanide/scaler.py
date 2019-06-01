@@ -1,8 +1,11 @@
+from .log import logger
+
 import os
 # Use CPUs only.
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 # Turn off meaningless warnings.
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = "2"
+logger.debug("GPUs are disabled for CPU calculation for tensorflow.")
 
 from itertools import permutations
 from collections import defaultdict
@@ -28,6 +31,8 @@ class Scaler:
             custom_edges: Custom edge at specific edge index e. It is a dict,
                 keys are edge index and values are building block.
         """
+        logger.debug("Scaler.scale starts.")
+
         if edge_bbs is None:
             edge_bbs = defaultdict(lambda: None)
 
@@ -60,9 +65,8 @@ class Scaler:
                 length += 2.0*edge_bbs[(i, j)].length + bond_length
 
             edge_lengths[(i, j)] = length
-        print("EL:\n", edge_lengths)
 
-        min_length = min(edge_lengths.values())
+            logger.info(f"Length of edge type ({i}, {j}) = {length:.4f}")
 
         # Get pairs of bond indices and images (periodic boundary) and
         # target norms (lengths) of edges.
@@ -103,18 +107,34 @@ class Scaler:
                     edge_length += 2.0*custom_edges[e].length
                 else:
                     edge_length += 2.0*custom_edges[e].length + bond_length
-                print(
-                    "Edge {} is custom, Length: {:.4f}".format(e, edge_length)
+
+                logger.info(
+                    f"Edge index {e} is custom, Length: {edge_length:.4f}"
                 )
 
-            # Use normalized length (to be minimum length == 1).
-            target_norm = edge_length / min_length
+            target_norm = edge_length
             target_norms.append(target_norm)
 
         # Type casting to np.array.
         pairs = np.array(pairs)
         images = np.around(images)
-        target_norm = np.array(target_norm)
+        target_norms = np.array(target_norms)
+
+        min_length = target_norms.min()
+        max_length = target_norms.max()
+        logger.info(f"Max edge length: {max_length:.4f}")
+        logger.info(f"Min edge length: {min_length:.4f}")
+
+        # Target norms are normalized to be the min length == 1.
+        target_norms /= min_length
+
+        max_min_ratio = max_length / min_length
+
+        if max_min_ratio > 2.0:
+            logger.warning(
+                f"The max/min ratio of edge = {max_min_ratio:.2f} > 2, "
+                "the optimized topology can be weird."
+            )
 
         # Get angle triples.
         # New data view of pairs and images for the triples.
@@ -246,6 +266,7 @@ class Scaler:
 
         x0 = np.concatenate([s.reshape(-1), c.reshape(-1)])
 
+        logger.info("Topology optimization starts.")
         # Perform optimization.
         result = sp.optimize.minimize(
             x0=x0,
@@ -255,6 +276,10 @@ class Scaler:
             bounds=bounds,
             options={"maxiter": 500, "disp": False},
         )
+
+        ##########################################################
+        # Should print the result of optimization in the future! #
+        ##########################################################
 
         n = topology.n_all_points
         # Get output x.
@@ -276,9 +301,12 @@ class Scaler:
         norms = norms.numpy()
         cos = cos.numpy()
 
-        print(np.array(list(
-            zip(topology.edge_indices, target_norms, norms)
-        )))
+        logger.info("Optimized edge lengths.")
+        logger.info("Index Target Result")
+        for e, tn, n in zip(topology.edge_indices, target_norms, norms):
+            n *= min_length
+            tn *= min_length
+            logger.info(f"{e:5d} {tn:6.3f} {n:6.3f}")
 
         # Return to normalized scale to real scale.
         c *= min_length

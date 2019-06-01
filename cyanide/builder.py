@@ -2,6 +2,7 @@ from collections import defaultdict
 
 import numpy as np
 
+from .log import logger
 from .mof import MOF
 from .scaler import Scaler
 from .locator import Locator
@@ -13,8 +14,7 @@ class Builder:
         self.scaler = Scaler()
         self.locator = Locator()
 
-    def build(self, topology, node_bbs, edge_bbs=None, \
-              custom_edges=None, verbose=False):
+    def build(self, topology, node_bbs, edge_bbs=None, custom_edges=None):
         """
         The node_bbs must be given with proper order.
         Same as node type order in topology.
@@ -23,15 +23,12 @@ class Builder:
             custom_edges: Custom edge at specific edge index e. It is a dict,
                 keys are edge index and values are building block.
         """
+        logger.debug("Builder.build starts.")
+
         if edge_bbs is None:
             edge_bbs = defaultdict(lambda: None)
         else:
             edge_bbs = defaultdict(lambda: None, edge_bbs)
-
-        if verbose:
-            echo = print
-        else:
-            echo = lambda x: None
 
         # make empty dictionary.
         if custom_edges is None:
@@ -40,7 +37,7 @@ class Builder:
         assert topology.n_node_types == len(node_bbs)
 
         # Calculate bonds before start.
-        echo("Calculating bonds in building blocks...")
+        logger.info("Start pre-calculation of bonds in building blocks.")
         for node in node_bbs:
             node.bonds
 
@@ -49,7 +46,7 @@ class Builder:
                 continue
             edge.bonds
 
-        echo("Scale topology...")
+        logger.info("Start topology scaling.")
         # Get scaled topology.
         scaled_topology = \
             self.scaler.scale(topology, node_bbs, edge_bbs, custom_edges)
@@ -60,7 +57,7 @@ class Builder:
         # Locate nodes and edges.
         located_bbs = [None for _ in range(topology.n_all_points)]
 
-        echo("Placing nodes...")
+        logger.info("Start placing nodes.")
         # Locate nodes.
         for t, node_bb in enumerate(node_bbs):
             # t: node type.
@@ -73,10 +70,11 @@ class Builder:
                 center = topology.atoms[i].position
                 located_node.set_center(center)
                 located_bbs[i] = located_node
-                echo("Node {} is located, RMSD: {:.2E}".format(i, rms))
+                logger.info(f"Node {i} is located, RMSD: {rms:.2E}")
 
         # Calculate matching permutations of nodes.
         # Permutation of edges are matched later.
+        logger.debug("Start finding maching permuation of nodes.")
         permutations = [None for _ in range(topology.n_all_points)]
         for i in topology.node_indices:
             bb = located_bbs[i]
@@ -147,6 +145,7 @@ class Builder:
             return image
 
         # Locate edges.
+        logger.info("Start placing edges.")
         c = topology.atoms.cell
         invc = np.linalg.inv(topology.atoms.cell)
         for t, edge_bb in edge_bbs.items():
@@ -184,9 +183,10 @@ class Builder:
                 located_edge.set_center(center)
                 located_bbs[e] = located_edge
 
-                echo("Edge {} is located, RMSD: {:.2E}".format(e, rms))
+                logger.info(f"Edge {e} is located, RMSD: {rms:.2E}")
 
         # Locate custom edges.
+        logger.info("Start placing custom edges.")
         for e, edge_bb in custom_edges.items():
             n1, n2 = topology.neighbor_list[e]
 
@@ -212,9 +212,10 @@ class Builder:
             located_edge.set_center(center)
             located_bbs[e] = located_edge
 
-            echo("Custom edge {} is located, RMSD: {:.2E}".format(e, rms))
+            logger.info(f"Custom edge {e} is located, RMSD: {rms:.2E}")
 
         # Calculate edge matching permutations
+        logger.debug("Start finding maching permuation of edges.")
         for i in topology.edge_indices:
             bb = located_bbs[i]
             if bb is None:
@@ -226,8 +227,8 @@ class Builder:
             perm = local_topo.matching_permutation(local_bb)
             permutations[i] = perm
 
-        echo("Finding bonds in generated MOF...")
-        echo("Finding bonds in building blocks...")
+        logger.info("Start finding bonds in generated MOF.")
+        logger.info("Start finding bonds in building blocks.")
         # Build bonds of generated MOF.
         index_offsets = [None for _ in range(topology.n_all_points)]
         index_offsets[0] = 0
@@ -244,7 +245,7 @@ class Builder:
             bb_bonds.append(bb.bonds + offset)
         bb_bonds = np.concatenate(bb_bonds, axis=0)
 
-        echo("Finding bonds between building blocks...")
+        logger.info("Start finding bonds between building blocks.")
 
         # Find bond between building blocks.
         bonds = []
@@ -270,22 +271,24 @@ class Builder:
             else:
                 bonds.append((a1, a2))
 
-            echo("Bonds on topology edge {} are connected.".format(j))
+            logger.info(f"Bonds on topology edge {j} are connected.")
 
         bonds = np.array(bonds)
 
         # All bonds in generated MOF.
         all_bonds = np.concatenate([bb_bonds, bonds], axis=0)
 
-        echo("Making MOF instance...")
+        logger.info("Start Making MOF instance.")
         # Make full atoms from located building blocks.
         bb_atoms_list = [v.atoms for v in located_bbs if v is not None]
 
+        logger.debug("Merge list of atoms.")
         mof_atoms = sum(bb_atoms_list[1:], bb_atoms_list[0])
+        logger.debug("Set cell and boundary.")
         mof_atoms.set_pbc(True)
         mof_atoms.set_cell(topology.atoms.cell)
 
         mof = MOF(mof_atoms, all_bonds, wrap=True)
-        echo("Done.")
+        logger.info("Construction of MOF done.")
 
         return mof

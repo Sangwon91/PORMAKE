@@ -11,7 +11,7 @@ logger.setLevel(logging.DEBUG)
 file_log_handler = logging.FileHandler(filename="test.log", mode="w")
 file_log_handler.setLevel(logging.DEBUG)
 formatter = logging.Formatter(
-    fmt="[%(asctime)s %(levelname)-8s %(filename)s:%(lineno)s] %(message)s",
+    fmt="[%(asctime)s %(levelname)s %(filename)s:%(lineno)s] %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 file_log_handler.setFormatter(formatter)
@@ -20,7 +20,7 @@ file_log_handler.setFormatter(formatter)
 console_log_handler = logging.StreamHandler()
 console_log_handler.setLevel(logging.INFO)
 # Simple formatter.
-formatter = logging.Formatter(fmt="%(message)s")
+formatter = logging.Formatter(fmt=">>> %(message)s")
 console_log_handler.setFormatter(formatter)
 
 # Add the handlers to the logger.
