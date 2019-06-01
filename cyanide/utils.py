@@ -91,6 +91,11 @@ def read_cgd(filename, node_symbol="C", edge_center_symbol="O"):
     site_properties = {
         "type": node_types + edge_types,
     }
+
+    # I don't know why pymatgen can't parse this spacegroup.
+    if spacegroup == "Cmca":
+        spacegroup = "Cmce"
+
     structure = mg.Structure.from_spacegroup(
                     sg=spacegroup,
                     lattice=mg.Lattice.from_parameters(*cellpar),
