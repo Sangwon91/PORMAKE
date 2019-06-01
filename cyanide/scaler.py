@@ -2,7 +2,7 @@ from .log import logger
 
 import os
 # Use CPUs only.
-os.environ["CUDA_VISIBLE_DEVICES"] = ""
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 # Turn off meaningless warnings.
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = "2"
 logger.debug("GPUs are disabled for CPU calculation for tensorflow.")

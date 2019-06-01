@@ -26,3 +26,11 @@ console_log_handler.setFormatter(formatter)
 # Add the handlers to the logger.
 logger.addHandler(file_log_handler)
 logger.addHandler(console_log_handler)
+
+def disable_print():
+    console_log_handler.setLevel(logging.WARNING)
+    logger.warning("Console logs (INFO level) are disabled.")
+
+def enable_print():
+    console_log_handler.setLevel(logging.INFO)
+    logger.warning("Console logs (INFO level) are enabled.")

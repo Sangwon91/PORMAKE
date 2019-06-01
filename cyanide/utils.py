@@ -1,5 +1,3 @@
-import warnings
-
 import numpy as np
 
 import ase
@@ -8,6 +6,7 @@ import ase.neighborlist
 
 import pymatgen as mg
 
+from .log import logger
 
 def covalent_neighbor_list(
         atoms, scale=1.2, neglected_species=[], neglected_indices=[]):
@@ -123,8 +122,9 @@ def read_cgd(filename, node_symbol="C", edge_center_symbol="O"):
     del atoms[list(set(J))]
 
     if len(J) > 0:
-        msg = "Overlapped positions are removed: index {}".format(set(J))
-        warnings.warn(msg)
+        logger.warning(
+            "Overlapped positions are removed: index %s", set(J)
+        )
 
     return atoms
 
