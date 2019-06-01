@@ -73,7 +73,7 @@ class BuildingBlock:
             I = I[valid_indices]
             J = J[valid_indices]
 
-            self._bonds = np.array(list(zip(I, J)))
+            self._bonds = np.stack([I, J], axis=1)
 
         return self._bonds
 
