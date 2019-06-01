@@ -1,5 +1,8 @@
 import os
+# Use CPUs only.
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
+# Turn off meaningless warnings.
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = "2"
 
 from itertools import permutations
 from collections import defaultdict
@@ -15,16 +18,22 @@ class Scaler:
     """
     Scale topology using given nodes and edges building blocks information.
     """
-    def scale(self, topology, node_bbs, edge_bbs=None):
+    def scale(self, topology, node_bbs, edge_bbs=None, custom_edges=None):
         """
         Inputs:
             topology (Topology): topology object.
             node_bbs (List of BuildingBlocks): list of node building blocks.
             edge_bbs (Dict of BuildingBlocks): dict of edge building blocks.
                 The key of the dict is (i, j) where i and j are node types.
+            custom_edges: Custom edge at specific edge index e. It is a dict,
+                keys are edge index and values are building block.
         """
         if edge_bbs is None:
             edge_bbs = defaultdict(lambda: None)
+
+        # make empty dictionary.
+        if custom_edges is None:
+            custom_edges = {}
 
         bond_length = 1.5
 
@@ -60,6 +69,8 @@ class Scaler:
         pairs = []
         images = []
         target_norms = []
+        c = topology.atoms.cell
+        invc = np.linalg.inv(c)
         for e in topology.edge_indices:
             # ni: neigbor with index i.
             ni, nj = topology.neighbor_list[e]
@@ -76,17 +87,28 @@ class Scaler:
 
             ri = topology.atoms.positions[i]
             rj = topology.atoms.positions[j]
-
-            c = topology.atoms.cell
-
-            s = (d - (rj-ri)) @ np.linalg.inv(c)
+            s = (d - (rj-ri)) @ invc
 
             images.append(s)
 
             # Calculate target norm of the edge.
             ti, tj = topology.get_edge_type(e)
 
-            target_norm = edge_lengths[(ti, tj)] / min_length
+            # Resizing for custom edges.
+            edge_length = edge_lengths[(ti, tj)]
+            edge_bb = edge_bbs[(ti, tj)]
+            if e in custom_edges:
+                if edge_bb is not None:
+                    edge_length -= 2.0*edge_bb.length
+                    edge_length += 2.0*custom_edges[e].length
+                else:
+                    edge_length += 2.0*custom_edges[e].length + bond_length
+                print(
+                    "Edge {} is custom, Length: {:.4f}".format(e, edge_length)
+                )
+
+            # Use normalized length (to be minimum length == 1).
+            target_norm = edge_length / min_length
             target_norms.append(target_norm)
 
         # Type casting to np.array.
@@ -255,7 +277,7 @@ class Scaler:
         cos = cos.numpy()
 
         print(np.array(list(
-            zip(target_norms, norms)
+            zip(topology.edge_indices, target_norms, norms)
         )))
 
         # Return to normalized scale to real scale.
@@ -265,6 +287,7 @@ class Scaler:
         new_data = [[] for _ in range(topology.n_all_points)]
         # Transform to Cartesian coordinates.
         r = s @ c
+        inv_old_c = np.linalg.inv(topology.atoms.cell)
         for e in topology.edge_indices:
             ni, nj = topology.neighbor_list[e]
 
@@ -276,7 +299,7 @@ class Scaler:
 
             d = nj.distance_vector - ni.distance_vector
 
-            image = (d - (rj-ri)) @ np.linalg.inv(topology.atoms.cell)
+            image = (d - (rj-ri)) @ inv_old_c
 
             # New edge center.
             ri = r[i]

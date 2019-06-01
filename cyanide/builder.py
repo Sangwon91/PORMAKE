@@ -13,10 +13,15 @@ class Builder:
         self.scaler = Scaler()
         self.locator = Locator()
 
-    def build(self, topology, node_bbs, edge_bbs=None, verbose=False):
+    def build(self, topology, node_bbs, edge_bbs=None, \
+              custom_edges=None, verbose=False):
         """
         The node_bbs must be given with proper order.
         Same as node type order in topology.
+
+        Inputs:
+            custom_edges: Custom edge at specific edge index e. It is a dict,
+                keys are edge index and values are building block.
         """
         if edge_bbs is None:
             edge_bbs = defaultdict(lambda: None)
@@ -27,6 +32,10 @@ class Builder:
             echo = print
         else:
             echo = lambda x: None
+
+        # make empty dictionary.
+        if custom_edges is None:
+            custom_edges = {}
 
         assert topology.n_node_types == len(node_bbs)
 
@@ -42,7 +51,8 @@ class Builder:
 
         echo("Scale topology...")
         # Get scaled topology.
-        scaled_topology = self.scaler.scale(topology, node_bbs, edge_bbs)
+        scaled_topology = \
+            self.scaler.scale(topology, node_bbs, edge_bbs, custom_edges)
 
         # Replace topology to scaled_topology
         topology = scaled_topology
@@ -116,6 +126,26 @@ class Builder:
 
             return a1, a2
 
+        def calc_image(ni, nj, invc):
+            """
+            Calculate image number.
+            External variables:
+                topology.
+            """
+            # Calculate image.
+            # d = d_{ij}
+            i = ni.index
+            j = nj.index
+
+            d = nj.distance_vector - ni.distance_vector
+
+            ri = topology.atoms.positions[i]
+            rj = topology.atoms.positions[j]
+
+            image = (d - (rj-ri)) @ invc
+
+            return image
+
         # Locate edges.
         c = topology.atoms.cell
         invc = np.linalg.inv(topology.atoms.cell)
@@ -123,6 +153,9 @@ class Builder:
             if edge_bb is None:
                 continue
             for e in topology.edge_indices:
+                if e in custom_edges:
+                    continue
+
                 ti, tj = topology.get_edge_type(e)
                 if t != (ti, tj):
                     continue
@@ -140,13 +173,8 @@ class Builder:
                 r1 = bb1.atoms.positions[a1]
                 r2 = bb2.atoms.positions[a2]
 
-                d = r2 - r1
-
-                # Apply simple minimum image convection.
-                s = d @ invc
-                s = np.where(s>0.5, s-1.0, s)
-                s = np.where(s<-0.5, s+1.0, s)
-                d = s @ c
+                image = calc_image(n1, n2, invc)
+                d = r2 - r1 + image@c
 
                 center = r1 + 0.5*d
 
@@ -156,7 +184,35 @@ class Builder:
                 located_edge.set_center(center)
                 located_bbs[e] = located_edge
 
-                echo("Edge {} is located, RMSD: {:.2E}".format(i, rms))
+                echo("Edge {} is located, RMSD: {:.2E}".format(e, rms))
+
+        # Locate custom edges.
+        for e, edge_bb in custom_edges.items():
+            n1, n2 = topology.neighbor_list[e]
+
+            i1 = n1.index
+            i2 = n2.index
+
+            bb1 = located_bbs[i1]
+            bb2 = located_bbs[i2]
+
+            a1, a2 = find_matched_atom_indices(e)
+
+            r1 = bb1.atoms.positions[a1]
+            r2 = bb2.atoms.positions[a2]
+
+            image = calc_image(n1, n2, invc)
+            d = r2 - r1 + image@c
+
+            center = r1 + 0.5*d
+
+            target = LocalStructure(np.array([r1, r1+d]), [i1, i2])
+            located_edge, rms = self.locator.locate(target, edge_bb)
+
+            located_edge.set_center(center)
+            located_bbs[e] = located_edge
+
+            echo("Custom edge {} is located, RMSD: {:.2E}".format(e, rms))
 
         # Calculate edge matching permutations
         for i in topology.edge_indices:
