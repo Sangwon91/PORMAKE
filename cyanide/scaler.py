@@ -21,19 +21,8 @@ class Scaler:
     """
     Scale topology using given nodes and edges building blocks information.
     """
-    def scale(self, topology, node_bbs, edge_bbs=None, custom_edge_bbs=None):
-        """
-        Inputs:
-            topology (Topology): topology object.
-            node_bbs (List of BuildingBlocks): list of node building blocks.
-            edge_bbs (Dict of BuildingBlocks): dict of edge building blocks.
-                The key of the dict is (i, j) where i and j are node types.
-            custom_edge_bbs: Custom edge building blocks at specific edge
-                index e. It is a dict, keys are edge index and values are
-                building block.
-        """
-        logger.debug("Scaler.scale starts.")
-
+    def calculate_edge_lengths(
+            self, topology, node_bbs, edge_bbs=None, custom_edge_bbs=None):
         if edge_bbs is None:
             edge_bbs = defaultdict(lambda: None)
 
@@ -67,7 +56,8 @@ class Scaler:
 
             edge_lengths[(i, j)] = length
 
-            logger.info(f"Length of edge type ({i}, {j}) = {length:.4f}")
+            logger.debug(
+                f"Calculate length of edge type ({i}, {j}) = {length:.4f}")
 
         custom_edge_lengths = {}
         for e in custom_edge_bbs:
@@ -87,9 +77,41 @@ class Scaler:
 
             custom_edge_lengths[e] = edge_length
 
-            logger.info(
-                f"Edge index {e} is custom, Length: {edge_length:.4f}"
+            logger.debug(
+                f"Calculate edge index {e} (custom), Length: {edge_length:.4f}"
             )
+
+        return edge_lengths, custom_edge_lengths
+
+    def scale(self, topology, node_bbs, edge_bbs=None, custom_edge_bbs=None):
+        """
+        Inputs:
+            topology (Topology): topology object.
+            node_bbs (List of BuildingBlocks): list of node building blocks.
+            edge_bbs (Dict of BuildingBlocks): dict of edge building blocks.
+                The key of the dict is (i, j) where i and j are node types.
+            custom_edge_bbs: Custom edge building blocks at specific edge
+                index e. It is a dict, keys are edge index and values are
+                building block.
+        """
+        logger.debug("Scaler.scale starts.")
+
+        if edge_bbs is None:
+            edge_bbs = defaultdict(lambda: None)
+
+        # make empty dictionary.
+        if custom_edge_bbs is None:
+            custom_edge_bbs = {}
+
+        edge_lengths, custom_edge_lengths = \
+            self.calculate_edge_lengths(topology, node_bbs,
+                                        edge_bbs, custom_edge_bbs)
+
+        for k, v in edge_lengths.items():
+            logger.info(f"Length of edge type ({k}) = {v:.4f}")
+
+        for e, v in custom_edge_lengths.items():
+            logger.info(f"Edge index {e} is custom, Length: {v:.4f}")
 
         # Get pairs of bond indices and images (periodic boundary) and
         # target norms (lengths) of edges.
