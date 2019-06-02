@@ -14,14 +14,15 @@ class Builder:
         self.scaler = Scaler()
         self.locator = Locator()
 
-    def build(self, topology, node_bbs, edge_bbs=None, custom_edges=None):
+    def build(self, topology, node_bbs, edge_bbs=None, custom_edge_bbs=None):
         """
         The node_bbs must be given with proper order.
         Same as node type order in topology.
 
         Inputs:
-            custom_edges: Custom edge at specific edge index e. It is a dict,
-                keys are edge index and values are building block.
+            custom_edge_bbs: Custom edge building blocks at specific edge
+                index e. It is a dict, keys are edge index and values are
+                building block.
         """
         logger.debug("Builder.build starts.")
 
@@ -31,8 +32,8 @@ class Builder:
             edge_bbs = defaultdict(lambda: None, edge_bbs)
 
         # make empty dictionary.
-        if custom_edges is None:
-            custom_edges = {}
+        if custom_edge_bbs is None:
+            custom_edge_bbs = {}
 
         assert topology.n_node_types == len(node_bbs)
 
@@ -49,7 +50,7 @@ class Builder:
         logger.info("Start topology scaling.")
         # Get scaled topology.
         scaled_topology = \
-            self.scaler.scale(topology, node_bbs, edge_bbs, custom_edges)
+            self.scaler.scale(topology, node_bbs, edge_bbs, custom_edge_bbs)
 
         # Replace topology to scaled_topology
         topology = scaled_topology
@@ -152,7 +153,7 @@ class Builder:
             if edge_bb is None:
                 continue
             for e in topology.edge_indices:
-                if e in custom_edges:
+                if e in custom_edge_bbs:
                     continue
 
                 ti, tj = topology.get_edge_type(e)
@@ -187,7 +188,7 @@ class Builder:
 
         # Locate custom edges.
         logger.info("Start placing custom edges.")
-        for e, edge_bb in custom_edges.items():
+        for e, edge_bb in custom_edge_bbs.items():
             n1, n2 = topology.neighbor_list[e]
 
             i1 = n1.index
