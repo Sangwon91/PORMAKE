@@ -5,6 +5,7 @@ import numpy as np
 import ase
 import ase.visualize
 
+from .log import logger
 from .utils import read_budiling_block_xyz, covalent_neighbor_list
 from .local_structure import LocalStructure
 
@@ -67,6 +68,7 @@ class BuildingBlock:
     @property
     def bonds(self):
         if self._bonds is None:
+            logger.debug("No bonds information. Start bond detection.")
             I, J, _ = covalent_neighbor_list(self.atoms)
             # Get i < j only.
             valid_indices = I < J
@@ -74,6 +76,7 @@ class BuildingBlock:
             J = J[valid_indices]
 
             self._bonds = np.stack([I, J], axis=1)
+            logger.debug("Bond detection ends.")
 
         return self._bonds
 

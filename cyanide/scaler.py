@@ -21,15 +21,16 @@ class Scaler:
     """
     Scale topology using given nodes and edges building blocks information.
     """
-    def scale(self, topology, node_bbs, edge_bbs=None, custom_edges=None):
+    def scale(self, topology, node_bbs, edge_bbs=None, custom_edge_bbs=None):
         """
         Inputs:
             topology (Topology): topology object.
             node_bbs (List of BuildingBlocks): list of node building blocks.
             edge_bbs (Dict of BuildingBlocks): dict of edge building blocks.
                 The key of the dict is (i, j) where i and j are node types.
-            custom_edges: Custom edge at specific edge index e. It is a dict,
-                keys are edge index and values are building block.
+            custom_edge_bbs: Custom edge building blocks at specific edge
+                index e. It is a dict, keys are edge index and values are
+                building block.
         """
         logger.debug("Scaler.scale starts.")
 
@@ -37,8 +38,8 @@ class Scaler:
             edge_bbs = defaultdict(lambda: None)
 
         # make empty dictionary.
-        if custom_edges is None:
-            custom_edges = {}
+        if custom_edge_bbs is None:
+            custom_edge_bbs = {}
 
         bond_length = 1.5
 
@@ -68,6 +69,28 @@ class Scaler:
 
             logger.info(f"Length of edge type ({i}, {j}) = {length:.4f}")
 
+        custom_edge_lengths = {}
+        for e in custom_edge_bbs:
+            ni, nj = topology.neighbor_list[e]
+
+            i = ni.index
+            j = nj.index
+
+            ti, tj = topology.get_edge_type(e)
+
+            len_i = node_bbs[ti].length
+            len_j = node_bbs[tj].length
+
+            edge_bb_len = custom_edge_bbs[e].length
+
+            edge_length = len_i + len_j + 2*edge_bb_len + 2*1.5
+
+            custom_edge_lengths[e] = edge_length
+
+            logger.info(
+                f"Edge index {e} is custom, Length: {edge_length:.4f}"
+            )
+
         # Get pairs of bond indices and images (periodic boundary) and
         # target norms (lengths) of edges.
         pairs = []
@@ -96,21 +119,11 @@ class Scaler:
             images.append(s)
 
             # Calculate target norm of the edge.
-            ti, tj = topology.get_edge_type(e)
-
-            # Resizing for custom edges.
-            edge_length = edge_lengths[(ti, tj)]
-            edge_bb = edge_bbs[(ti, tj)]
-            if e in custom_edges:
-                if edge_bb is not None:
-                    edge_length -= 2.0*edge_bb.length
-                    edge_length += 2.0*custom_edges[e].length
-                else:
-                    edge_length += 2.0*custom_edges[e].length + bond_length
-
-                logger.info(
-                    f"Edge index {e} is custom, Length: {edge_length:.4f}"
-                )
+            if e in custom_edge_lengths:
+                edge_length = custom_edge_lengths[e]
+            else:
+                ti, tj = topology.get_edge_type(e)
+                edge_length = edge_lengths[(ti, tj)]
 
             target_norm = edge_length
             target_norms.append(target_norm)
@@ -302,11 +315,12 @@ class Scaler:
         cos = cos.numpy()
 
         logger.info("Optimized edge lengths.")
-        logger.info("Index Target Result")
-        for e, tn, n in zip(topology.edge_indices, target_norms, norms):
-            n *= min_length
-            tn *= min_length
-            logger.info(f"{e:5d} {tn:6.3f} {n:6.3f}")
+        logger.info("| Index | Target | Result | Error(%) |")
+        errors = np.abs(1.0 - norms/target_norms) * 100.0
+        ml = min_length
+        es = topology.edge_indices
+        for e, tn, n, err in zip(es, target_norms*ml, norms*ml, errors):
+            logger.info(f"{e:7d}   {tn:6.3f}   {n:6.3f}   {err:<5.2f}")
 
         # Return to normalized scale to real scale.
         c *= min_length
