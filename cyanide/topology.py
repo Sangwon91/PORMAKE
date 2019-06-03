@@ -194,6 +194,6 @@ class Topology:
         msg = "Topology {}, (".format(self.name)
         for cn in self.unique_cn:
             msg += f"{cn},"
-        msg = msg[:-1] + ")-cn"
+        msg = msg[:-1] + ")-cn, num edge types: {}".format(self.n_edge_types)
 
         return msg
