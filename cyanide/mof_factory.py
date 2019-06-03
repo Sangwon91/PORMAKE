@@ -44,7 +44,9 @@ class MofFactory:
             logger.info(f"{i}'th MOF Construction")
             mof = self.builder.build(t, n, e)
             logger.info("Writing cif.")
-            mof.write_cif(f"{savedir}/{stem}.cif")
+            save_path = f"{savedir}/{stem}{i}.cif"
+            logger.info(f"Save path: {save_path}")
+            mof.write_cif(save_path)
 
     def count_valid_combinations(self):
         count = 0
