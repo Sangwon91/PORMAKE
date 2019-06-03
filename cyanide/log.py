@@ -42,6 +42,3 @@ def disable_file_print():
 def enable_file_print():
     file_log_handler.setLevel(logging.DEBUG)
     logging.warning("File logs (all levels) are enabled.")
-
-# This is default option.
-disable_file_print()
