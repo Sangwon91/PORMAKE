@@ -40,7 +40,7 @@ class MofFactory:
             self.max_ratio = max_ratio
 
     def manufacture(self, savedir=".", stem=""):
-        for i, (t, n, e) in enumerate(self._generate_valid_combinations()):
+        for i, (t, n, e) in enumerate(self.generate_valid_combinations()):
             logger.info(
                 "{}'th MOF Construction, Topology: {}".format(i, t.name)
             )
@@ -55,13 +55,13 @@ class MofFactory:
 
     def count_valid_combinations(self):
         count = 0
-        for t, n, e in self._generate_valid_combinations():
+        for t, n, e in self.generate_valid_combinations():
             count += 1
             if count%200 == 0:
                 logger.debug(f"Counting combinations, Current counts: {count}")
         return count
 
-    def _generate_valid_combinations(self):
+    def generate_valid_combinations(self):
         for topology in self.topologies:
             #logger.debug("topology: {}".format(topology.name))
             gen = self._generate_valid_node_bbs_and_edge_bbs(topology)

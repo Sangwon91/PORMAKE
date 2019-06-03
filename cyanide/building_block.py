@@ -12,9 +12,10 @@ from .local_structure import LocalStructure
 
 class BuildingBlock:
     def __init__(self, bb_file):
-        self.atoms, cpi = read_budiling_block_xyz(bb_file)
-        self.connection_point_indices = np.array(cpi)
-        self._bonds = None
+        self.atoms = read_budiling_block_xyz(bb_file)
+        self.name = self.atoms.info["name"]
+        self.connection_point_indices = np.array(self.atoms.info["cpi"])
+        self._bonds = self.atoms.info["bonds"]
 
     def copy(self):
         return copy.deepcopy(self)
@@ -97,3 +98,9 @@ class BuildingBlock:
 
     def view(self):
         ase.visualize.view(self.atoms)
+
+    def __repr__(self):
+        msg = "BuildingBlock: {}, # of connection points: {}".format(
+            self.name, self.n_connection_points
+        )
+        return msg

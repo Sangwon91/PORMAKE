@@ -81,6 +81,15 @@ class Topology:
         self._n_node_types = np.unique(self.node_types).shape[0] - 1
         self._n_edge_types = np.unique(self.edge_types, axis=0).shape[0] - 1
 
+        self.cn = np.array([len(n) for n in self.neighbor_list])
+        self.cn = self.cn[self.node_indices]
+        self.unique_cn = []
+        types = np.unique(self.node_types[self.node_indices])
+        for t in types:
+            i = np.argmax(self.node_types == t)
+            self.unique_cn.append(self.cn[i])
+        self.unique_cn = np.array(self.unique_cn)
+
     def local_structure(self, i):
         indices = []
         positions = []
@@ -180,3 +189,11 @@ class Topology:
         if isinstance(r, int):
             r = (r, r, r)
         ase.visualize.view(atoms, repeat=r, **kwargs)
+
+    def __repr__(self):
+        msg = "Topology {}, (".format(self.name)
+        for cn in self.unique_cn:
+            msg += f"{cn},"
+        msg = msg[:-1] + ")-cn"
+
+        return msg

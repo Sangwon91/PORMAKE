@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 
 import ase
@@ -157,6 +159,8 @@ def read_cgd(filename, node_symbol="C", edge_center_symbol="O"):
 
 
 def read_budiling_block_xyz(bb_file):
+    name = Path(bb_file).stem
+
     with open(bb_file, "r") as f:
         lines = f.readlines()
 
@@ -173,9 +177,14 @@ def read_budiling_block_xyz(bb_file):
         symbols.append(symbol)
         positions.append(position)
 
-    atoms = ase.Atoms(symbols=symbols, positions=positions)
+    info = {}
+    info["cpi"] = connection_point_indices
+    info["name"] = name
+    info["bonds"] = None # To be done.
 
-    return atoms, connection_point_indices
+    atoms = ase.Atoms(symbols=symbols, positions=positions, info=info)
+
+    return atoms
 
 
 def normalize_positions(positions):
