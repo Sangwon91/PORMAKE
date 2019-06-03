@@ -3,6 +3,7 @@ import copy
 import numpy as np
 
 import ase
+import ase.utils
 import ase.visualize
 
 from .log import logger
@@ -69,11 +70,21 @@ class BuildingBlock:
     def bonds(self):
         if self._bonds is None:
             logger.debug("No bonds information. Start bond detection.")
-            I, J, _ = covalent_neighbor_list(self.atoms)
-            # Get i < j only.
-            valid_indices = I < J
-            I = I[valid_indices]
-            J = J[valid_indices]
+            r = self.atoms.positions
+            c = 1.2*np.array(ase.utils.natural_cutoffs(self.atoms))
+
+            diff = r[np.newaxis, :, :] - r[:, np.newaxis, :]
+            norms = np.linalg.norm(diff, axis=-1)
+            cutoffs = c[np.newaxis, :] + c[:, np.newaxis]
+
+            IJ = np.argwhere(norms < cutoffs)
+            I = IJ[:, 0]
+            J = IJ[:, 1]
+
+            indices = I < J
+
+            I = I[indices]
+            J = J[indices]
 
             self._bonds = np.stack([I, J], axis=1)
             logger.debug("Bond detection ends.")
