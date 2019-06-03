@@ -100,7 +100,7 @@ def read_cgd(filename, node_symbol="C", edge_center_symbol="O"):
     edge_types = [-1 for _ in edge_center_positions]
     site_properties = {
         "type": node_types + edge_types,
-        "coord_num": coordination_numbers + [2 for _ in edge_center_positions],
+        "cn": coordination_numbers + [2 for _ in edge_center_positions],
     }
 
     # I don't know why pymatgen can't parse this spacegroup.
@@ -119,6 +119,7 @@ def read_cgd(filename, node_symbol="C", edge_center_symbol="O"):
     info = {
         "spacegroup": spacegroup,
         "name": name,
+        "cn": structure.site_properties["cn"],
     }
 
     # Cast mg.Structure to ase.Atoms
