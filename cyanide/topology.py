@@ -5,6 +5,7 @@ import numpy as np
 import ase
 import ase.visualize
 
+from .log import logger
 from .utils import read_cgd
 from .local_structure import LocalStructure
 from .neighbor_list import Neighbor, NeighborList
@@ -14,9 +15,22 @@ class Topology:
     def __init__(self, cgd_file):
         self.atoms = read_cgd(filename=cgd_file)
         self.neighbor_list = NeighborList(self.atoms)
+
         # Save additional information.
         self.name = self.atoms.info["name"]
         self.spacegroup = self.atoms.info["spacegroup"]
+
+        # Check coordination numbers!
+        for cn, ns in zip(self.atoms.info["cn"], self.neighbor_list):
+            if cn != len(ns):
+                logger.exception(
+                    "Topology parsing fails: {}".format(self.name))
+                # Dirty...
+                raise Exception
+
+        logger.debug(
+            "All coordination numbers are proper: {}".format(self.name)
+        )
 
         # Calculate properties.
         self.calculate_properties()
