@@ -43,7 +43,7 @@ class BuildingBlock:
         return self.atoms[self.connection_point_indices].positions
 
     @property
-    def n_connection_potins(self):
+    def n_connection_points(self):
         return len(self.connection_point_indices)
 
     @property
