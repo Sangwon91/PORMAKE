@@ -56,7 +56,7 @@ def read_cgd(filename, node_symbol="C", edge_center_symbol="O"):
         coordination_numbers.append(coordination_number)
 
     node_positions = np.array(node_positions)
-    coordination_numbers = np.array(coordination_numbers)
+    #coordination_numbers = np.array(coordination_numbers)
 
     # Parse edge information.
     edge_center_positions = []
@@ -70,6 +70,16 @@ def read_cgd(filename, node_symbol="C", edge_center_symbol="O"):
         pos_j = np.array([float(r) for r in tokens[4:]])
 
         edge_center_pos = 0.5 * (pos_i+pos_j)
+        edge_center_positions.append(edge_center_pos)
+
+    # New feature. Read EDGE_CENTER.
+    for line in lines[3:]:
+        tokens = line.split()
+
+        if tokens[0] != "EDGE_CENTER":
+            continue
+
+        edge_center_pos = np.array([float(r) for r in tokens[1:]])
         edge_center_positions.append(edge_center_pos)
 
     edge_center_positions = np.array(edge_center_positions)
@@ -90,6 +100,7 @@ def read_cgd(filename, node_symbol="C", edge_center_symbol="O"):
     edge_types = [-1 for _ in edge_center_positions]
     site_properties = {
         "type": node_types + edge_types,
+        "coord_num": coordination_numbers + [2 for _ in edge_center_positions],
     }
 
     # I don't know why pymatgen can't parse this spacegroup.
@@ -175,8 +186,10 @@ def normalize_positions(positions):
     positions = positions / distances[:, np.newaxis]
 
     # Get the center of position.
+    max_loop = 100
+    n_loop = 0
     cop = np.mean(positions, axis=0)
-    while (np.abs(cop) > 1e-6).any():
+    while (np.abs(cop) > 1e-4).any():
         #print("COP:", cop)
         # Move cop to zero
         positions = positions - cop
@@ -190,5 +203,16 @@ def normalize_positions(positions):
         # Recenter
         cop = np.mean(positions, axis=0)
         positions = positions - cop
+
+        n_loop += 1
+        if n_loop > max_loop:
+            logger.warning(
+                f"Max iter in position normalization exceed, Centroid: {cop}"
+            )
+            break
+
+    # Recenter
+    cop = np.mean(positions, axis=0)
+    positions = positions - cop
 
     return positions
