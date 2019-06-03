@@ -41,7 +41,9 @@ class MofFactory:
 
     def manufacture(self, savedir=".", stem=""):
         for i, (t, n, e) in enumerate(self._generate_valid_combinations()):
-            logger.info(f"{i}'th MOF Construction")
+            logger.info(
+                "{}'th MOF Construction, Topology: {}".format(i, t.name)
+            )
             mof = self.builder.build(t, n, e)
             logger.info("Writing cif.")
             save_path = f"{savedir}/{stem}{i}.cif"
@@ -58,6 +60,7 @@ class MofFactory:
 
     def _generate_valid_combinations(self):
         for topology in self.topologies:
+            #logger.debug("topology: {}".format(topology.name))
             gen = self._generate_valid_node_bbs_and_edge_bbs(topology)
             for node_bbs, edge_bbs in gen:
                 yield topology, node_bbs, edge_bbs
@@ -70,10 +73,22 @@ class MofFactory:
             for j, bb in enumerate(self.all_node_bbs):
                 if bb.n_connection_points != len(target.atoms):
                     continue
+
+                logger.debug(
+                    "topo {}: {} == {}".format(
+                    topology.name, bb.n_connection_points, len(target.atoms))
+                )
                 _, rmsd_ = self.locator.locate(target, bb)
 
                 if rmsd_ <= self.max_rmsd:
                     valid_node_bb_indices[i].append(j)
+
+        # Check empty candidates.
+        for indices in valid_node_bb_indices:
+            # There is no valid node builing block at that point type.
+            if not indices:
+                # Stop generation.
+                return
 
         for node_bb_indices in product(*valid_node_bb_indices):
             node_bbs = [self.all_node_bbs[i] for i in node_bb_indices]
