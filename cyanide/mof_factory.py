@@ -47,19 +47,10 @@ class MofFactory:
             try:
                 mof = self.builder.build(t, n, e)
                 save_path = f"{savedir}/{stem}{i}.cif"
-                logger.info("Writing cif.")
-                logger.info(f"Save path: {save_path}")
+                logger.info(f"Writing cif. Save path: {save_path}")
                 mof.write_cif(save_path)
             except Exception as e:
                 logger.exception("MOF Build fails: {}".format(e))
-
-    def count_valid_combinations(self):
-        count = 0
-        for t, n, e in self.generate_valid_combinations():
-            count += 1
-            if count%200 == 0:
-                logger.debug(f"Counting combinations, Current counts: {count}")
-        return count
 
     def generate_valid_combinations(self):
         for topology in self.topologies:
