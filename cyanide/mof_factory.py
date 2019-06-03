@@ -44,11 +44,14 @@ class MofFactory:
             logger.info(
                 "{}'th MOF Construction, Topology: {}".format(i, t.name)
             )
-            mof = self.builder.build(t, n, e)
-            logger.info("Writing cif.")
-            save_path = f"{savedir}/{stem}{i}.cif"
-            logger.info(f"Save path: {save_path}")
-            mof.write_cif(save_path)
+            try:
+                mof = self.builder.build(t, n, e)
+                save_path = f"{savedir}/{stem}{i}.cif"
+                logger.info("Writing cif.")
+                logger.info(f"Save path: {save_path}")
+                mof.write_cif(save_path)
+            except Exception as e:
+                logger.exception("MOF Build fails: {}".format(e))
 
     def count_valid_combinations(self):
         count = 0
@@ -74,15 +77,22 @@ class MofFactory:
                 if bb.n_connection_points != len(target.atoms):
                     continue
 
-                logger.debug(
-                    "topo {}: {} == {}".format(
-                    topology.name, bb.n_connection_points, len(target.atoms))
-                )
                 _, rmsd_ = self.locator.locate(target, bb)
+
+                logger.debug(
+                    "topo: {}, local {}, RMSD: {}"
+                    .format(topology.name, i, rmsd_)
+                )
 
                 if rmsd_ <= self.max_rmsd:
                     valid_node_bb_indices[i].append(j)
+                    logger.debug(
+                        "Appended {}".format(valid_node_bb_indices[i])
+                    )
 
+        logger.debug(
+            "topo {}, All {}".format(topology.name, valid_node_bb_indices)
+        )
         # Check empty candidates.
         for indices in valid_node_bb_indices:
             # There is no valid node builing block at that point type.
