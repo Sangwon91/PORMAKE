@@ -14,26 +14,37 @@ from .neighbor_list import Neighbor, NeighborList
 class Topology:
     def __init__(self, cgd_file):
         self.atoms = read_cgd(filename=cgd_file)
-        self.neighbor_list = NeighborList(self.atoms)
-
         # Save additional information.
         self.name = self.atoms.info["name"]
         self.spacegroup = self.atoms.info["spacegroup"]
 
-        # Check coordination numbers!
-        for cn, ns in zip(self.atoms.info["cn"], self.neighbor_list):
-            if cn != len(ns):
-                logger.exception(
-                    "Topology parsing fails: {}".format(self.name))
-                # Dirty...
-                raise Exception
+        self.neighbor_list = NeighborList(self.atoms, method="distance")
+        if not self.check_coordination_numbers():
+            logger.debug(
+                "{}: Distance based parsing fails.. "
+                "Try nearest two method.".format(self.name)
+            )
+            self.neighbor_list = \
+                NeighborList(self.atoms, method="nearest")
 
-        logger.debug(
-            "All coordination numbers are proper: {}".format(self.name)
-        )
+        if not self.check_coordination_numbers():
+            logger.error(
+                "Topology parsing fails: {}".format(self.name)
+            )
+            raise Exception("Invalid cgd file: {}".format(self.name))
+        else:
+            logger.debug(
+                "All coordination numbers are proper: {}".format(self.name)
+            )
 
         # Calculate properties.
         self.calculate_properties()
+
+    def check_coordination_numbers(self):
+        for cn, ns in zip(self.atoms.info["cn"], self.neighbor_list):
+            if cn != len(ns):
+                return False
+        return True
 
     def copy(self):
         return copy.deepcopy(self)

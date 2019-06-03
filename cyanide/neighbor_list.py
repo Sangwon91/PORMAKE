@@ -19,16 +19,38 @@ class NeighborList:
     """
     Make the connectivity between nodes and edge centers for the topologies.
     """
-    def __init__(self, atoms):
-        # Should be changed "0.5 threshold" to "nearest 2 node for edge".
-        # Because there are edges length != 1.0 (e.g. ith-d).
-        # It occurs because the cgd file "try to" make all edge length to 1.0.
+    def __init__(self, atoms, method):
+        # C for nodes and O for edges.
+        if method == "distance":
+            self.distance_based_build(atoms)
+        elif method == "nearest":
+            self.nearest_two_based_build(atoms)
+        else:
+            logger.error(f"Invalid method {method}.")
+            raise Exception("Invalid arguments.") # Hmm...
 
+    def distance_based_build(self, atoms):
+        eps = 1e-3
+        cutoffs = {
+            ("C", "C"): 0.0,
+            ("O", "O"): 0.0,
+            ("C", "O"): 0.5+eps,
+        }
+
+        I, J, D = ase.neighborlist.neighbor_list("ijD", atoms, cutoff=cutoffs)
+
+        self.max_index = np.max(I)
+        self._neighbor_list = [[] for _ in range(self.max_index+1)]
+
+        for i, j, d in zip(I, J, D):
+            self._neighbor_list[i].append(Neighbor(j, d))
+
+    def nearest_two_based_build(self, atoms):
         # C for nodes and O for edges.
         cutoffs = {
             ("C", "C"): 0.0,
             ("O", "O"): 0.0,
-            ("C", "O"): 1.0,
+            ("C", "O"): 0.7,
         }
 
         I, J, D = ase.neighborlist.neighbor_list("ijD", atoms, cutoff=cutoffs)

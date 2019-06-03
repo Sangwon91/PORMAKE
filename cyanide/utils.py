@@ -136,9 +136,19 @@ def read_cgd(filename, node_symbol="C", edge_center_symbol="O"):
     I, J, D = ase.neighborlist.neighbor_list("ijd", atoms, cutoff=0.1)
     # Remove higher index.
     J = J[J > I]
-    del atoms[list(set(J))]
-
     if len(J) > 0:
+        # Save original size of atoms.
+        n = len(atoms)
+        removed_indices = set(J)
+
+        del atoms[list(removed_indices)]
+
+        cn = atoms.info["cn"]
+        # Remove old cn info.
+        cn = [cn[i] for i in range(n) if i not in removed_indices]
+
+        atoms.info["cn"] = cn
+
         logger.warning(
             "Overlapped positions are removed: index %s", set(J)
         )
