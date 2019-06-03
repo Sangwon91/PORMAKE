@@ -21,8 +21,21 @@ class Scaler:
     """
     Scale topology using given nodes and edges building blocks information.
     """
-    def calculate_edge_lengths(
-            self, topology, node_bbs, edge_bbs=None, custom_edge_bbs=None):
+    def calculate_max_min_edge_lengths(self,
+            topology, node_bbs, edge_bbs=None, custom_edge_bbs=None):
+        edge_lengths, custom_edge_lengths = \
+           self.calculate_edge_lengths(topology, node_bbs,
+                                       edge_bbs, custom_edge_bbs)
+        lengths = list(edge_lengths.values())
+        lengths += list(custom_edge_lengths.values())
+
+        max_len = max(lengths)
+        min_len = min(lengths)
+
+        return max_len, min_len
+
+    def calculate_edge_lengths(self,
+            topology, node_bbs, edge_bbs=None, custom_edge_bbs=None):
         if edge_bbs is None:
             edge_bbs = defaultdict(lambda: None)
 

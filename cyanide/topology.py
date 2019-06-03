@@ -72,6 +72,23 @@ class Topology:
         return self._edge_types[i]
 
     @property
+    def unique_local_structures(self):
+        types = np.unique(self.node_types[self.node_indices])
+        local_structures = []
+        for t in types:
+            i = np.argmax(self.node_types == t)
+            local_structures.append(self.local_structure(i))
+        return local_structures
+
+    @property
+    def unique_node_types(self):
+        return np.unique(self.node_types[self.node_indices])
+
+    @property
+    def unique_edge_types(self):
+        return np.unique(self.edge_types[self.edge_indices], axis=0)
+
+    @property
     def node_types(self):
         return self._node_types
 
@@ -86,6 +103,7 @@ class Topology:
     @property
     def node_indices(self):
         return self._node_indices
+
     @property
     def edge_indices(self):
         return self._edge_indices
