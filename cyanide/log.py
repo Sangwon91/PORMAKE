@@ -8,7 +8,7 @@ logger.propagate = False
 logger.setLevel(logging.DEBUG)
 
 # Setting for the file logs.
-file_log_handler = logging.FileHandler(filename="test.log", mode="w")
+file_log_handler = logging.FileHandler(filename="runtime.log", mode="w")
 file_log_handler.setLevel(logging.DEBUG)
 formatter = logging.Formatter(
     fmt="[%(asctime)s %(levelname)s %(filename)s:%(lineno)s] %(message)s",
@@ -29,8 +29,19 @@ logger.addHandler(console_log_handler)
 
 def disable_print():
     console_log_handler.setLevel(logging.WARNING)
-    logger.warning("Console logs (INFO level) are disabled.")
+    logger.warning("Console logs (under WARNING level) are disabled.")
 
 def enable_print():
     console_log_handler.setLevel(logging.INFO)
-    logger.warning("Console logs (INFO level) are enabled.")
+    logger.warning("Console logs (under WARNING level) are enabled.")
+
+def disable_file_print():
+    file_log_handler.setLevel(logging.WARNING)
+    logging.warning("File logs (under WARNING level) are disabled.")
+
+def enable_file_print():
+    file_log_handler.setLevel(logging.DEBUG)
+    logging.warning("File logs (all levels) are enabled.")
+
+# This is default option.
+disable_file_print()
