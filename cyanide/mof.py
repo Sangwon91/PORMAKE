@@ -6,6 +6,8 @@ import ase
 import ase.visualize
 import ase.neighborlist
 
+from .log import logger
+
 class MOF:
     def __init__(self, atoms, bonds, wrap=True):
         atoms = atoms.copy()
@@ -30,10 +32,15 @@ class MOF:
         Write MOF in cif format.
         """
 
-        path = Path(filename)
+        path = Path(filename).resolve()
+        if not path.parent.exists():
+            logger.error(f"Path {path} does not exist.")
+
+        # Add suffix if not exists.
         if path.suffix != ".cif":
             path = path.with_suffix(".cif")
 
+        # Replace space to underbar.
         stem = path.stem.replace(" ", "_")
 
         with path.open("w") as f:
