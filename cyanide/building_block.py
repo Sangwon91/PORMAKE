@@ -55,9 +55,8 @@ class BuildingBlock:
         """
         dists = self.connection_points - self.center
         norm = np.linalg.norm(dists, axis=1)
-        # Return any norm.
-
-        return norm[0]
+        # Return average norm. It can be harmful for highly non-symmetric bbs.
+        return np.mean(norm)
 
     @property
     def is_edge(self):
