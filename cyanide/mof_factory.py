@@ -50,7 +50,7 @@ class MofFactory:
                 logger.info(f"Writing cif. Save path: {save_path}")
                 mof.write_cif(save_path)
             except Exception as e:
-                logger.exception("MOF Build fails: {}".format(e))
+                logger.error("MOF Build fails: {}".format(e))
 
     def generate_valid_combinations(self):
         for topology in self.topologies:
@@ -88,18 +88,22 @@ class MofFactory:
         for indices in valid_node_bb_indices:
             # There is no valid node builing block at that point type.
             if not indices:
+                logger.debug("Empty indices exist.")
                 # Stop generation.
                 return
 
         for node_bb_indices in product(*valid_node_bb_indices):
+            logger.debug(f"node indices: {node_bb_indices}")
             node_bbs = [self.all_node_bbs[i] for i in node_bb_indices]
             gen = self._generate_valid_edge_bbs(topology, node_bbs)
             for edge_bbs in gen:
+                logger.debug(f"edge_bbs: {edge_bbs}")
                 yield node_bbs, edge_bbs
 
     def _generate_valid_edge_bbs(self, topology, node_bbs):
         unique_edge_types = [tuple(e) for e in topology.unique_edge_types]
         n_edge_types = topology.n_edge_types
+        logger.debug(f"n_edge_types: {n_edge_types}")
         for edge_bbs in product(self.all_edge_bbs, repeat=n_edge_types):
             edge_bbs = {k: v for k, v in zip(unique_edge_types, edge_bbs)}
 
@@ -108,6 +112,7 @@ class MofFactory:
                                )
 
             ratio = max_len / min_len
+            logger.debug(f"ratio: {ratio}")
             if ratio > self.max_ratio:
                 continue
 
