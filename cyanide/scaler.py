@@ -335,15 +335,6 @@ class Scaler:
         c = x[-9:].reshape(3, 3)
         s = x[:-9].reshape(n, 3)
 
-        # Calculate adjust_ratio.
-        # The adjust_ratio make all edge length > target length.
-        #norms, cos = calc_norms_and_cos(s, c)
-        #norms = norms.numpy()
-        #cos = cos.numpy()
-        #adjust_ratio = np.max(target_norms / norms)
-        # Adjust cell to make sure all edges are longer than target length.
-        #c *= adjust_ratio
-
         # Check all lengths and angles.
         norms, cos = calc_norms_and_cos(s, c)
         norms = norms.numpy()

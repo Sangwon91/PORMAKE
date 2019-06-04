@@ -108,7 +108,6 @@ class MofFactory:
                                )
 
             ratio = max_len / min_len
-
             if ratio > self.max_ratio:
                 continue
 
