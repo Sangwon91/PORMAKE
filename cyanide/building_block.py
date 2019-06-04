@@ -7,7 +7,7 @@ import ase.utils
 import ase.visualize
 
 from .log import logger
-from .utils import read_budiling_block_xyz, covalent_neighbor_list
+from .utils import read_budiling_block_xyz, covalent_neighbor_list, METAL_LIKE
 from .local_structure import LocalStructure
 
 class BuildingBlock:
@@ -57,6 +57,11 @@ class BuildingBlock:
         norm = np.linalg.norm(dists, axis=1)
         # Return average norm. It can be harmful for highly non-symmetric bbs.
         return np.mean(norm)
+
+    @property
+    def has_metal(self):
+        inter = set(self.atoms.symbols) & set(METAL_LIKE)
+        return len(inter) != 0
 
     @property
     def is_edge(self):

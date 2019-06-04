@@ -10,6 +10,27 @@ import pymatgen as mg
 
 from .log import logger
 
+# Metal species.
+METAL_LIKE = [
+    "Li", "Be", "B", "Na", "Mg",
+    "Al", "Si", "K", "Ca", "Sc",
+    "Ti", "V", "Cr", "Mn", "Fe",
+    "Co", "Ni", "Cu", "Zn", "Ga",
+    "Ge", "As", "Rb", "Sr", "Y",
+    "Zr", "Nb", "Mo", "Tc", "Ru",
+    "Rh", "Pd", "Ag", "Cd", "In",
+    "Sn", "Sb", "Te", "Cs", "Ba",
+    "La", "Ce", "Pr", "Nd", "Pm",
+    "Sm", "Eu", "Gd", "Tb", "Dy",
+    "Ho", "Er", "Tm", "Yb", "Lu",
+    "Hf", "Ta", "W", "Re", "Os",
+    "Ir", "Pt", "Au", "Hg", "Tl",
+    "Pb", "Bi", "Po", "Fr", "Ra",
+    "Ac", "Th", "Pa", "U", "Np",
+    "Pu", "Am", "Cm", "Bk", "Cf",
+    "Es", "Fm", "Md", "No", "Lr",
+]
+
 def covalent_neighbor_list(
         atoms, scale=1.2, neglected_species=[], neglected_indices=[]):
 
