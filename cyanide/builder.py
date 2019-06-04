@@ -289,7 +289,14 @@ class Builder:
         mof_atoms.set_pbc(True)
         mof_atoms.set_cell(topology.atoms.cell)
 
-        mof = MOF(mof_atoms, all_bonds, wrap=True)
+        info = {
+            "topology": topology,
+            "node_bbs": node_bbs,
+            "edge_bbs": edge_bbs,
+            "custom_edge_bbs": custom_edge_bbs,
+        }
+
+        mof = MOF(mof_atoms, all_bonds, info=info, wrap=True)
         logger.info("Construction of MOF done.")
 
         return mof
