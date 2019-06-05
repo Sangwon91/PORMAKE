@@ -189,6 +189,9 @@ class Builder:
         # Locate custom edges.
         logger.info("Start placing custom edges.")
         for e, edge_bb in custom_edge_bbs.items():
+            if edge_bb is None:
+                continue
+
             n1, n2 = topology.neighbor_list[e]
 
             i1 = n1.index

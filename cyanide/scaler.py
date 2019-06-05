@@ -84,9 +84,12 @@ class Scaler:
             len_i = node_bbs[ti].length
             len_j = node_bbs[tj].length
 
-            edge_bb_len = custom_edge_bbs[e].length
+            if custom_edge_bbs[e] is not None:
+                edge_bb_len = 2*custom_edge_bbs[e].length + bond_length
+            else:
+                edge_bb_len = 0.0
 
-            edge_length = len_i + len_j + 2*edge_bb_len + 2*1.5
+            edge_length = len_i + len_j + bond_length + edge_bb_len
 
             custom_edge_lengths[e] = edge_length
 
