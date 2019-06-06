@@ -41,10 +41,11 @@ class MofFactory:
 
     def manufacture(self, savedir=".", stem=""):
         for i, (t, n, e) in enumerate(self.generate_valid_combinations()):
-            logger.info(
-                "{}'th MOF Construction, Topology: {}".format(i, t.name)
-            )
             try:
+                logger.info(
+                    "{}'th MOF Construction, Topology: {}".format(i, t.name)
+                )
+
                 mof = self.builder.build(t, n, e)
                 save_path = f"{savedir}/{stem}{i}.cif"
                 logger.info(f"Writing cif. Save path: {save_path}")
@@ -95,6 +96,14 @@ class MofFactory:
         for node_bb_indices in product(*valid_node_bb_indices):
             logger.debug(f"node indices: {node_bb_indices}")
             node_bbs = [self.all_node_bbs[i] for i in node_bb_indices]
+            # Only MOF and assume linker has organics.
+            has_metal = False
+            for i in node_bbs:
+                if i.has_metal:
+                    has_metal = True
+                    logger.debug(f"{i} has metal.")
+            if not has_metal:
+                continue
             gen = self._generate_valid_edge_bbs(topology, node_bbs)
             for edge_bbs in gen:
                 logger.debug(f"edge_bbs: {edge_bbs}")
