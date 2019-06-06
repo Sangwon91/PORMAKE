@@ -36,12 +36,12 @@ class Locator:
 
             # Reorder coordinates.
             q_coord = atoms.positions
-            q_review = rmsd.reorder_hungarian(
+            q_perm = rmsd.reorder_hungarian(
                            p_atoms, q_atoms, p_coord, q_coord)
 
             # Use this permutation of the euler angle. But do not used the
             # Rotated atoms in order to get pure U.
-            q_coord = local1.atoms.positions[q_review]
+            q_coord = local1.atoms.positions[q_perm]
 
             # Rotation matrix.
             U = rmsd.kabsch(q_coord, p_coord)
@@ -51,6 +51,7 @@ class Locator:
             if rmsd_val < min_rmsd_val:
                 min_rmsd_val = rmsd_val
                 min_rmsd_U = U
+                min_perm = q_perm
 
             # The value of 1e-4 can be changed.
             if min_rmsd_val < 1e-4:
@@ -59,7 +60,42 @@ class Locator:
         # Load best vals.
         U = min_rmsd_U
         rmsd_val = min_rmsd_val
-        # Rotate building block.
+
+        # Copy for ratation.
+        bb = bb.copy()
+
+        # Rotate using U from RMSD.
+        positions = bb.atoms.positions
+        centroid = bb.centroid
+
+        positions -= centroid
+        positions = np.dot(positions, U) + centroid
+
+        # Update position of atoms.
+        bb.atoms.set_positions(positions)
+
+        return bb, min_perm, rmsd_val
+
+    def locate_with_permutation(self, target, bb, permutation):
+        """
+        Locate bb to target with pre-obtained permutation of bb.
+        """
+        local0 = target
+        local1 = bb.local_structure()
+
+        # p: target points, q: to be rotated points.
+        p_atoms = np.array(local0.atoms.symbols)
+        p_coord = local0.atoms.positions
+
+        q_atoms = np.array(local1.atoms.symbols)
+        q_coord = local1.atoms.positions
+        # Permutation used here.
+        q_coord = q_coord[permutation]
+
+        # Rotation matrix.
+        U = rmsd.kabsch(q_coord, p_coord)
+        rmsd_val = rmsd.kabsch_rmsd(p_coord, q_coord)
+
         bb = bb.copy()
 
         # Rotate using U from RMSD.
