@@ -105,6 +105,7 @@ class Scaler:
             vec_i = \
                 self.bbs[i].connection_points[cp_index] - self.bbs[i].centroid
 
+
             perm_j = self.perms[j]
             cp_index = perm_j[cj]
             len_j = self.bbs[j].lengths[cp_index]
@@ -118,21 +119,22 @@ class Scaler:
             target_norm = edge_length
             target_norms.append(target_norm)
 
+            # Rescaling.
+            vec_i = vec_i / np.linalg.norm(vec_i) * edge_length
+            vec_j = vec_j / np.linalg.norm(vec_j) * edge_length
+
             vectors_ij.append(vec_i)
             vectors_ji.append(vec_j)
 
         # Cast to numpy array.
-        target_norms = np.array(target_norms)
+        target_normsq = np.square(target_norms)
         vectors_ij = np.array(vectors_ij)
         vectors_ji = np.array(vectors_ji)
 
-        min_length = target_norms.min()
-        max_length = target_norms.max()
+        min_length = target_normsq.min()**0.5
+        max_length = target_normsq.max()**0.5
         logger.info(f"Max edge length: {max_length:.4f}")
         logger.info(f"Min edge length: {min_length:.4f}")
-
-        # Target norms are normalized to be the min length == 1.
-        target_norms /= min_length
 
         max_min_ratio = max_length / min_length
         if max_min_ratio > 2.0:
@@ -177,7 +179,7 @@ class Scaler:
             vectors_view[i].append(vec_ij)
             vectors_view[j].append(vec_ji)
 
-        target_cos = []
+        target_dot = []
         target_ij_vec = []
         target_ik_vec = []
         for i in topology.node_indices:
@@ -190,18 +192,24 @@ class Scaler:
         target_ij_vec = np.array(target_ij_vec)
         target_ik_vec = np.array(target_ik_vec)
 
-        nj = np.linalg.norm(target_ij_vec, axis=-1)
-        nk = np.linalg.norm(target_ik_vec, axis=-1)
+        target_dot = np.sum(target_ij_vec*target_ik_vec, axis=-1)
+        target_dot = np.around(target_dot, decimals=5)
 
-        target_cos = np.sum(target_ij_vec*target_ik_vec, axis=-1) / nj / nk
-        target_cos = np.around(target_cos, decimals=5)
+        for d in target_dot:
+            logger.info(f"Target dot: {d:6.2f}")
 
+        for v in vectors_ij:
+            n = np.linalg.norm(v)
+            logger.info(f"Target vec_ij: {n:6.2f}")
         # Helper functions for calculation of objective function.
         # Numerically safe norm for derivatives.
-        def calc_norm(x):
-            return tf.sqrt(tf.reduce_sum(tf.square(x), axis=-1)+1e-3)
+        #def calc_norm(x):
+        #    return tf.sqrt(tf.reduce_sum(tf.square(x), axis=-1)+1e-3)
 
-        def calc_norms_and_cos(s, c):
+        def calc_normsq(x):
+            return tf.reduce_sum(tf.square(x), axis=-1)
+
+        def calc_normsq_and_dot(s, c):
             """
             External variables:
                 topology, pairs, image, ij, ik, ij_image, ik_image.
@@ -211,25 +219,26 @@ class Scaler:
             diff = s[tf.newaxis, :, :] - s[:, tf.newaxis, :]
 
             dist = (tf.gather_nd(diff, pairs) + images) @ c
-            norms = calc_norm(dist)
+            normsq = calc_normsq(dist)
 
             ij_vec = (tf.gather_nd(diff, ij) + ij_image) @ c
             ik_vec = (tf.gather_nd(diff, ik) + ik_image) @ c
 
-            ij_norm = calc_norm(ij_vec)
-            ik_norm = calc_norm(ik_vec)
+            dot = tf.reduce_sum(ij_vec * ik_vec, axis=-1)
 
-            cos = tf.reduce_sum(ij_vec * ik_vec, axis=-1) / ij_norm / ik_norm
-
-            return norms, cos
+            return normsq, dot
 
         def objective(s, c):
-            norms, cos = calc_norms_and_cos(s, c)
+            normsq, dot = calc_normsq_and_dot(s, c)
 
-            dist_error = tf.reduce_mean(tf.square(norms-target_norms))
-            angle_error = tf.reduce_mean(tf.square(cos-target_cos))
+            dist_error = tf.reduce_mean(
+                             tf.square(normsq - target_normsq)
+                         )
+            angle_error = tf.reduce_mean(
+                              tf.square(dot - target_dot)
+                          )
 
-            return dist_error + 0.5*angle_error
+            return dist_error + angle_error
 
         # Functions for scipy interface.
         def fun(x):
@@ -294,26 +303,20 @@ class Scaler:
         s = x[:-9].reshape(n, 3)
 
         # Check all lengths and angles.
-        norms, cos = calc_norms_and_cos(s, c)
-        norms = norms.numpy()
-        cos = cos.numpy()
+        normsq, dot = calc_normsq_and_dot(s, c)
+        normsq = normsq.numpy()
+        dot = dot.numpy()
 
         logger.info("Optimized edge lengths.")
         logger.info("| Index | Target | Result | Error(%) |")
-        errors = np.abs(1.0 - norms/target_norms) * 100.0
-        ml = min_length
+        errors = np.abs(1.0 - normsq/target_normsq) * 100.0
         es = topology.edge_indices
-        for e, tn, n, err in zip(es, target_norms*ml, norms*ml, errors):
+        for e, tn, n, err in zip(es, target_normsq, normsq, errors):
             logger.info(f"{e:7d}   {tn:6.3f}   {n:6.3f}   {err:<5.2f}")
 
         logger.info("Optimized angles.")
-        for a, ta in zip(cos, target_cos):
-            a = np.arccos(a) / np.pi*180
-            ta = np.arccos(ta) / np.pi*180
+        for a, ta in zip(dot, target_dot):
             logger.info(f"{a:6.2f} {ta:6.2f}")
-
-        # Return to normalized scale to real scale.
-        c *= min_length
 
         # Update neigbors list in topology.
         new_data = [[] for _ in range(topology.n_all_points)]
