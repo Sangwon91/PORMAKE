@@ -21,7 +21,6 @@ class MofFactory:
         self.max_rmsd = max_rmsd
         self.max_ratio = max_ratio
 
-        self.scaler = Scaler()
         self.locator = Locator()
         self.builder = Builder()
 
@@ -69,7 +68,7 @@ class MofFactory:
                 if bb.n_connection_points != len(target.atoms):
                     continue
 
-                _, rmsd_ = self.locator.locate(target, bb)
+                _, _, rmsd_ = self.locator.locate(target, bb)
 
                 logger.debug(
                     "topo: {}, local {}, RMSD: {}"
@@ -115,14 +114,4 @@ class MofFactory:
         logger.debug(f"n_edge_types: {n_edge_types}")
         for edge_bbs in product(self.all_edge_bbs, repeat=n_edge_types):
             edge_bbs = {k: v for k, v in zip(unique_edge_types, edge_bbs)}
-
-            max_len, min_len = self.scaler.calculate_max_min_edge_lengths(
-                                   topology, node_bbs, edge_bbs
-                               )
-
-            ratio = max_len / min_len
-            logger.debug(f"ratio: {ratio}")
-            if ratio > self.max_ratio:
-                continue
-
             yield edge_bbs
