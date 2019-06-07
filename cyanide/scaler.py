@@ -7,7 +7,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = "2"
 logger.debug("GPUs are disabled for CPU calculation for tensorflow.")
 
-from itertools import permutations
+from itertools import permutations, product
 from collections import defaultdict
 
 import numpy as np
@@ -74,9 +74,9 @@ class Scaler:
         images = np.around(images)
 
         # Calculate target norms and vectors for angles.
-        vectors_ij = []
-        vectors_ji = []
-        target_norms = []
+        # ij_vectors: list of vectors node i to j with building block size.
+        ij_vectors = []
+        ji_vectors = []
         for e in topology.edge_indices:
             # ni: neigbor with index i.
             ni, nj = topology.neighbor_list[e]
@@ -99,52 +99,34 @@ class Scaler:
 
             # Get node bb length to the connection point.
             # cp: connection point.
-            perm_i = self.perms[i]
-            cp_index = perm_i[ci]
-            len_i = self.bbs[i].lengths[cp_index]
-            vec_i = \
-                self.bbs[i].connection_points[cp_index] - self.bbs[i].centroid
+            bb = self.bbs[i]
+            p = self.perms[i]
+            len_i = bb.lengths[p][ci]
+            vec_i = bb.connection_points[p][ci] - bb.centroid
 
-
-            perm_j = self.perms[j]
-            cp_index = perm_j[cj]
-            len_j = self.bbs[j].lengths[cp_index]
-            vec_j = \
-                self.bbs[j].connection_points[cp_index] - self.bbs[j].centroid
+            bb = self.bbs[j]
+            p = self.perms[j]
+            len_j = bb.lengths[p][cj]
+            vec_j = bb.connection_points[p][cj] - bb.centroid
 
             edge_length = len_i + len_j + bond_length
             if self.bbs[e] is not None:
                 edge_length += 2*self.bbs[e].length + bond_length
 
-            target_norm = edge_length
-            target_norms.append(target_norm)
-
             # Rescaling.
             vec_i = vec_i / np.linalg.norm(vec_i) * edge_length
             vec_j = vec_j / np.linalg.norm(vec_j) * edge_length
 
-            vectors_ij.append(vec_i)
-            vectors_ji.append(vec_j)
+            ij_vectors.append(vec_i)
+            ji_vectors.append(vec_j)
 
         # Cast to numpy array.
-        target_normsq = np.square(target_norms)
-        vectors_ij = np.array(vectors_ij)
-        vectors_ji = np.array(vectors_ji)
-
-        min_length = target_normsq.min()**0.5
-        max_length = target_normsq.max()**0.5
-        logger.info(f"Max edge length: {max_length:.4f}")
-        logger.info(f"Min edge length: {min_length:.4f}")
-
-        max_min_ratio = max_length / min_length
-        if max_min_ratio > 2.0:
-            logger.warning(
-                f"The max/min ratio of edge = {max_min_ratio:.2f} > 2, "
-                "the optimized topology can be weird."
-            )
+        ij_vectors = np.array(ij_vectors)
+        ji_vectors = np.array(ji_vectors)
 
         # Get angle triples.
         # New data view of pairs and images for the triples.
+        # This is used for tensor operations during optimization.
         data_view = defaultdict(list)
         for (i, j), image in zip(pairs, images):
             data_view[i].append((j, image))
@@ -159,7 +141,7 @@ class Scaler:
 
         for i in topology.node_indices:
             neigbors = data_view[i]
-            for (j, j_image), (k, k_image) in permutations(neigbors, 2):
+            for (j, j_image), (k, k_image) in product(neigbors, repeat=2):
                 ij.append([i, j])
                 ik.append([i, k])
 
@@ -175,41 +157,32 @@ class Scaler:
 
         # Calculate target angles.
         vectors_view = defaultdict(list)
-        for (i, j), vec_ij, vec_ji in zip(pairs, vectors_ij, vectors_ji):
-            vectors_view[i].append(vec_ij)
-            vectors_view[j].append(vec_ji)
+        for (i, j), v_ij, v_ji in zip(pairs, ij_vectors, ji_vectors):
+            vectors_view[i].append(v_ij)
+            vectors_view[j].append(v_ji)
 
-        target_dot = []
+        # Now, i represents node i (center). j and k are represent indices of
+        # connection points from i.
+        target_dots = []
         target_ij_vec = []
         target_ik_vec = []
         for i in topology.node_indices:
             # Get all connection point vectors of node i.
             vectors = vectors_view[i]
-            for vj, vk in permutations(vectors, 2):
+            for vj, vk in product(vectors, repeat=2):
                 target_ij_vec.append(vj)
                 target_ik_vec.append(vk)
 
         target_ij_vec = np.array(target_ij_vec)
         target_ik_vec = np.array(target_ik_vec)
 
-        target_dot = np.sum(target_ij_vec*target_ik_vec, axis=-1)
-        target_dot = np.around(target_dot, decimals=5)
+        target_dots = np.sum(target_ij_vec*target_ik_vec, axis=-1)
 
-        for d in target_dot:
-            logger.info(f"Target dot: {d:6.2f}")
-
-        for v in vectors_ij:
-            n = np.linalg.norm(v)
-            logger.info(f"Target vec_ij: {n:6.2f}")
+        # Normalize target dots.
+        max_dot = np.mean(np.abs(target_dots))
+        target_dots /= max_dot
         # Helper functions for calculation of objective function.
-        # Numerically safe norm for derivatives.
-        #def calc_norm(x):
-        #    return tf.sqrt(tf.reduce_sum(tf.square(x), axis=-1)+1e-3)
-
-        def calc_normsq(x):
-            return tf.reduce_sum(tf.square(x), axis=-1)
-
-        def calc_normsq_and_dot(s, c):
+        def calc_dots(s, c):
             """
             External variables:
                 topology, pairs, image, ij, ik, ij_image, ik_image.
@@ -218,27 +191,24 @@ class Scaler:
 
             diff = s[tf.newaxis, :, :] - s[:, tf.newaxis, :]
 
-            dist = (tf.gather_nd(diff, pairs) + images) @ c
-            normsq = calc_normsq(dist)
+            ij_vecs = (tf.gather_nd(diff, ij) + ij_image) @ c
+            ik_vecs = (tf.gather_nd(diff, ik) + ik_image) @ c
 
-            ij_vec = (tf.gather_nd(diff, ij) + ij_image) @ c
-            ik_vec = (tf.gather_nd(diff, ik) + ik_image) @ c
+            dots = tf.reduce_sum(ij_vecs * ik_vecs, axis=-1)
 
-            dot = tf.reduce_sum(ij_vec * ik_vec, axis=-1)
+            return dots
 
-            return normsq, dot
+        # Prepare geometry optimization.
+        c = topology.atoms.cell
+        s = topology.atoms.get_scaled_positions()
+
+        initial_dots = calc_dots(s, c).numpy()
+        #for i, (td, d) in enumerate(zip(target_dots, initial_dots)):
+        #    logger.info(f"{i:6d} {td:6.2f} {d:6.2f}")
 
         def objective(s, c):
-            normsq, dot = calc_normsq_and_dot(s, c)
-
-            dist_error = tf.reduce_mean(
-                             tf.square(normsq - target_normsq)
-                         )
-            angle_error = tf.reduce_mean(
-                              tf.square(dot - target_dot)
-                          )
-
-            return dist_error + angle_error
+            dots = calc_dots(s, c)
+            return tf.reduce_mean(tf.square(dots - target_dots))
 
         # Functions for scipy interface.
         def fun(x):
@@ -302,24 +272,22 @@ class Scaler:
         c = x[-9:].reshape(3, 3)
         s = x[:-9].reshape(n, 3)
 
+        logger.info(f"Cell:\n{c}")
+
         # Check all lengths and angles.
-        normsq, dot = calc_normsq_and_dot(s, c)
-        normsq = normsq.numpy()
-        dot = dot.numpy()
+        dots = calc_dots(s, c).numpy()
 
-        logger.info("Optimized edge lengths.")
-        logger.info("| Index | Target | Result | Error(%) |")
-        errors = np.abs(1.0 - normsq/target_normsq) * 100.0
-        es = topology.edge_indices
-        for e, tn, n, err in zip(es, target_normsq, normsq, errors):
-            logger.info(f"{e:7d}   {tn:6.3f}   {n:6.3f}   {err:<5.2f}")
-
-        logger.info("Optimized angles.")
-        for a, ta in zip(dot, target_dot):
-            logger.info(f"{a:6.2f} {ta:6.2f}")
+        logger.info("Optimized dot products.")
+        logger.info("| Index |  Target  |  Result  |  Initial  |")
+        diffs = np.abs(target_dots - dots)
+        iter_ = enumerate(zip(target_dots, dots, initial_dots))
+        for i, (td, d, inid) in iter_:
+            logger.info(f"{i:7d}   {td:8.3f}   {d:8.3f}   {inid:8.3f}")
 
         # Update neigbors list in topology.
         new_data = [[] for _ in range(topology.n_all_points)]
+        # Rescaling cell to original scale.
+        c *= np.sqrt(max_dot)
         # Transform to Cartesian coordinates.
         r = s @ c
         invc = np.linalg.inv(c)
