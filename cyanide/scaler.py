@@ -263,9 +263,6 @@ class Scaler:
             options={"maxiter": 1000, "disp": False},
         )
 
-        logger.info(f"{result}")
-
-
         """
         result = sp.optimize.basinhopping(
                      x0=x0,
@@ -292,8 +289,12 @@ class Scaler:
         c = x[-9:].reshape(3, 3)
         s = x[:-9].reshape(n, 3)
 
-        logger.info(f"Cell:\n{c}")
+        logger.info("MESSAGE: %s", result.message)
+        logger.info("SUCCESS: %s", result.success)
+        logger.info("OBJ: %.3f", result.fun)
+        #logger.info(f"Cell:\n{c}")
 
+        """
         # Check all lengths and angles.
         dots = calc_dots(s, c).numpy()
 
@@ -303,6 +304,7 @@ class Scaler:
         iter_ = enumerate(zip(target_dots, dots, initial_dots))
         for i, (td, d, inid) in iter_:
             logger.info(f"{i:7d}   {td:8.3f}   {d:8.3f}   {inid:8.3f}")
+        """
 
         # Update neigbors list in topology.
         new_data = [[] for _ in range(topology.n_all_points)]
@@ -369,6 +371,7 @@ class Scaler:
 
         return scaled_topology
 
+    """
     def calculate_max_min_edge_lengths(self,
             topology, node_bbs, edge_bbs=None, custom_edge_bbs=None):
         edge_lengths, custom_edge_lengths = \
@@ -446,3 +449,4 @@ class Scaler:
             )
 
         return edge_lengths, custom_edge_lengths
+    """
