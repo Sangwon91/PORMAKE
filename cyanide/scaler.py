@@ -179,6 +179,7 @@ class Scaler:
         target_dots = np.sum(target_ij_vec*target_ik_vec, axis=-1)
 
         # Normalize target dots.
+        #max_dot = np.max(np.abs(target_dots))
         max_dot = np.mean(np.abs(target_dots))
         target_dots /= max_dot
         # Helper functions for calculation of objective function.
@@ -259,8 +260,27 @@ class Scaler:
             jac=jac,
             method="L-BFGS-B",
             bounds=bounds,
-            options={"maxiter": 500, "disp": False},
+            options={"maxiter": 1000, "disp": False},
         )
+
+        logger.info(f"{result}")
+
+
+        """
+        result = sp.optimize.basinhopping(
+                     x0=x0,
+                     func=fun,
+                     niter=100,
+                     T=1.0,
+                     stepsize=0.5,
+                     minimizer_kwargs={
+                         "jac": jac,
+                         "bounds": bounds,
+                         "method": "L-BFGS-B",
+                         #options={"maxiter": 500, "disp": False},
+                     },
+                 )
+        """
 
         ##########################################################
         # Should print the result of optimization in the future! #
@@ -319,13 +339,27 @@ class Scaler:
                 rc = np.around(rj - 0.5*d, decimals=3)
             r[e] = rc
 
+            # Save in proper order.
             new_data[e] += [
                 (i, -0.5*d),
                 (j, 0.5*d)
             ]
 
-            new_data[i].append((e, 0.5*d))
-            new_data[j].append((e, -0.5*d))
+        # Should change this stupidly nested loop.
+        # The new neigbor list is updated with same order of original neigbor
+        # list. Then we can use the permutation information for new location
+        # after topology scaling.
+        for i in topology.node_indices:
+            # Same order loop. Note that topology is the original.
+            for n in topology.neighbor_list[i]:
+                e = n.index
+                # Find cross reference.
+                for j, v in new_data[e]:
+                    if i == j:
+                        # j and v saved.
+                        break
+
+                new_data[i].append((e, -v))
 
         # Make scaled topology.
         scaled_topology = topology.copy()
