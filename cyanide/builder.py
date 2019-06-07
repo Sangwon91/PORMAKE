@@ -10,10 +10,6 @@ from .local_structure import LocalStructure
 
 # bb: building block.
 class Builder:
-    def __init__(self):
-        self.scaler = Scaler()
-        self.locator = Locator()
-
     def build(self, topology, node_bbs, edge_bbs=None, custom_edge_bbs=None):
         """
         The node_bbs must be given with proper order.
@@ -25,6 +21,9 @@ class Builder:
                 building block.
         """
         logger.debug("Builder.build starts.")
+
+        # locator for bb locations.
+        locator = Locator()
 
         if edge_bbs is None:
             edge_bbs = defaultdict(lambda: None)
@@ -47,45 +46,71 @@ class Builder:
                 continue
             edge.bonds
 
-        logger.info("Start topology scaling.")
-        # Get scaled topology.
-        scaled_topology = \
-            self.scaler.scale(topology, node_bbs, edge_bbs, custom_edge_bbs)
-
-        # Replace topology to scaled_topology
-        topology = scaled_topology
-
+        logger.info("Start placing nodes.")
         # Locate nodes and edges.
         located_bbs = [None for _ in range(topology.n_all_points)]
-
-        logger.info("Start placing nodes.")
-        # Locate nodes.
-        for t, node_bb in enumerate(node_bbs):
-            # t: node type.
-            for i in topology.node_indices:
-                if t != topology.get_node_type(i):
-                    continue
-                target = topology.local_structure(i)
-                located_node, rms = self.locator.locate(target, node_bb)
-                # Translate.
-                centroid = topology.atoms[i].position
-                located_node.set_centroid(centroid)
-                located_bbs[i] = located_node
-                logger.info(f"Node {i} is located, RMSD: {rms:.2E}")
-
-        # Calculate matching permutations of nodes.
-        # Permutation of edges are matched later.
-        logger.debug("Start finding maching permuation of nodes.")
         permutations = [None for _ in range(topology.n_all_points)]
+        # Locate nodes.
         for i in topology.node_indices:
-            bb = located_bbs[i]
-            local_topo = topology.local_structure(i)
-            local_bb = bb.local_structure()
-
-            # pos of local_topo.indices ~ pos of local_bb.indices[perm]
-            perm = local_topo.matching_permutation(local_bb)
+            # Get bb.
+            t = topology.get_node_type(i)
+            node_bb = node_bbs[t]
+            # Get target.
+            target = topology.local_structure(i)
+            # Only orientation.
+            # Translations are applied after topology relexation.
+            located_node, perm, rmsd = locator.locate(target, node_bb)
+            located_bbs[i] = located_node
+            # This information used in scaling of topology.
             permutations[i] = perm
 
+            #logger.info(f"Node {i} is located, RMSD: {rmsd:.2E}")
+
+        # Just append edges to the buidiling block slots.
+        # There is no location in this stage.
+        # This information is used in the scaling of topology.
+        # All permutations are set to [0, 1] because the edges does not need
+        # any permutation estimations for the locations.
+        logger.info("Start placing edges.")
+        for e in topology.edge_indices:
+            if e in custom_edge_bbs:
+                edge_bb = custom_edge_bbs[e]
+            else:
+                ti, tj = topology.get_edge_type(e)
+                edge_bb = edge_bbs[(ti, tj)]
+
+            if edge_bb is None:
+                continue
+
+            located_bbs[e] = edge_bb
+            permutations[e] = np.array([0, 1])
+
+        # Scale topology.
+        scaler = Scaler(topology, located_bbs, permutations)
+        # Change topology to scaled topology.
+        topology = scaler.scale()
+
+        # Relocate and translate node building blocks.
+        for i in topology.node_indices:
+            perm = permutations[i]
+            # Get node bb.
+            t = topology.get_node_type(i)
+            node_bb = node_bbs[t]
+            # Get target.
+            target = topology.local_structure(i)
+            # Orientation.
+            located_node, rmsd = \
+                locator.locate_with_permutation(target, node_bb, perm)
+            # Translation.
+            centroid = topology.atoms.positions[i]
+            located_node.set_centroid(centroid)
+
+            # Update.
+            located_bbs[i] = located_node
+
+            logger.info(f"Node {i}, RMSD: {rmsd:.3E}")
+
+        # Thie helpers are so verbose. Anoying.
         def find_matched_atom_indices(e):
             """
             Inputs:
@@ -149,46 +174,9 @@ class Builder:
         logger.info("Start placing edges.")
         c = topology.atoms.cell
         invc = np.linalg.inv(topology.atoms.cell)
-        for t, edge_bb in edge_bbs.items():
-            if edge_bb is None:
-                continue
-            for e in topology.edge_indices:
-                if e in custom_edge_bbs:
-                    continue
-
-                ti, tj = topology.get_edge_type(e)
-                if t != (ti, tj):
-                    continue
-
-                n1, n2 = topology.neighbor_list[e]
-
-                i1 = n1.index
-                i2 = n2.index
-
-                bb1 = located_bbs[i1]
-                bb2 = located_bbs[i2]
-
-                a1, a2 = find_matched_atom_indices(e)
-
-                r1 = bb1.atoms.positions[a1]
-                r2 = bb2.atoms.positions[a2]
-
-                image = calc_image(n1, n2, invc)
-                d = r2 - r1 + image@c
-
-                centroid = r1 + 0.5*d
-
-                target = LocalStructure(np.array([r1, r1+d]), [i1, i2])
-                located_edge, rms = self.locator.locate(target, edge_bb)
-
-                located_edge.set_centroid(centroid)
-                located_bbs[e] = located_edge
-
-                logger.info(f"Edge {e} is located, RMSD: {rms:.2E}")
-
-        # Locate custom edges.
-        logger.info("Start placing custom edges.")
-        for e, edge_bb in custom_edge_bbs.items():
+        for e in topology.edge_indices:
+            edge_bb = located_bbs[e]
+            # Neglect no edge cases.
             if edge_bb is None:
                 continue
 
@@ -208,28 +196,17 @@ class Builder:
             image = calc_image(n1, n2, invc)
             d = r2 - r1 + image@c
 
+            # This may outside of the unit cell. Should be changed.
             centroid = r1 + 0.5*d
 
             target = LocalStructure(np.array([r1, r1+d]), [i1, i2])
-            located_edge, rms = self.locator.locate(target, edge_bb)
+            located_edge, rmsd = \
+                locator.locate_with_permutation(target, edge_bb, [0, 1])
 
             located_edge.set_centroid(centroid)
             located_bbs[e] = located_edge
 
-            logger.info(f"Custom edge {e} is located, RMSD: {rms:.2E}")
-
-        # Calculate edge matching permutations
-        logger.debug("Start finding maching permuation of edges.")
-        for i in topology.edge_indices:
-            bb = located_bbs[i]
-            if bb is None:
-                continue
-            local_topo = topology.local_structure(i)
-            local_bb = bb.local_structure()
-
-            # pos of local_topo.indices ~ pos of local_bb.indices[perm]
-            perm = local_topo.matching_permutation(local_bb)
-            permutations[i] = perm
+            logger.info(f"Edge {e}, RMSD: {rmsd:.2E}")
 
         logger.info("Start finding bonds in generated MOF.")
         logger.info("Start finding bonds in building blocks.")
