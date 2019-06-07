@@ -23,9 +23,19 @@ class Locator:
         q_atoms = np.array(local1.atoms.symbols)
 
         # Serching best orientation over Euler angles.
-        alpha = np.linspace(0, 360, 4)
-        beta = np.linspace(0, 180, 4)
-        gamma = np.linspace(0, 360, 4)
+        n_points = p_coord.shape[0]
+        if n_points == 2:
+            n_slices = 1
+        elif n_points == 3:
+            n_slices = 2
+        elif n_points == 4:
+            n_slices = 3
+        else:
+            n_slices = 4
+
+        alpha = np.linspace(0, 360, n_slices)
+        beta = np.linspace(0, 180, n_slices)
+        gamma = np.linspace(0, 360, n_slices)
 
         min_rmsd_val = 1e30
         for a, b, g in itertools.product(alpha, beta, gamma):
