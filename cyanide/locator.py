@@ -38,7 +38,10 @@ class Locator:
             q_coord = atoms.positions
             q_review = rmsd.reorder_hungarian(
                            p_atoms, q_atoms, p_coord, q_coord)
-            q_coord = q_coord[q_review]
+
+            # Use this permutation of the euler angle. But do not used the
+            # Rotated atoms in order to get pure U.
+            q_coord = local1.atoms.positions[q_review]
 
             # Rotation matrix.
             U = rmsd.kabsch(q_coord, p_coord)
@@ -48,7 +51,6 @@ class Locator:
             if rmsd_val < min_rmsd_val:
                 min_rmsd_val = rmsd_val
                 min_rmsd_U = U
-                min_euler_angle = (a, b, g)
 
             # The value of 1e-4 can be changed.
             if min_rmsd_val < 1e-4:
@@ -59,15 +61,13 @@ class Locator:
         rmsd_val = min_rmsd_val
         # Rotate building block.
         bb = bb.copy()
-        # Apply euler rotate of minimum RMSD.
-        bb.atoms.euler_rotate(*min_euler_angle)
 
         # Rotate using U from RMSD.
         positions = bb.atoms.positions
-        center = bb.center
+        centroid = bb.centroid
 
-        positions -= center
-        positions = np.dot(positions, U) + center
+        positions -= centroid
+        positions = np.dot(positions, U) + centroid
 
         # Update position of atoms.
         bb.atoms.set_positions(positions)

@@ -24,21 +24,21 @@ class BuildingBlock:
         connection_points = self.atoms[self.connection_point_indices].positions
         return LocalStructure(connection_points, self.connection_point_indices)
 
-    def set_center(self, center):
+    def set_centroid(self, centroid):
         """
-        Set center of connection points.
+        Set centroid of connection points.
         """
         positions = self.atoms.positions
-        # Move center to zero.
-        positions = positions - self.center
-        # Recenter by given value.
-        positions = positions + center
+        # Move centroid to zero.
+        positions = positions - self.centroid
+        # Recentroid by given value.
+        positions = positions + centroid
         self.atoms.set_positions(positions)
 
     @property
-    def center(self):
-        center = np.mean(self.connection_points, axis=0)
-        return center
+    def centroid(self):
+        centroid = np.mean(self.connection_points, axis=0)
+        return centroid
 
     @property
     def connection_points(self):
@@ -51,12 +51,23 @@ class BuildingBlock:
     @property
     def length(self):
         """
-        distance between center and connecting point.
+        distance between centroid and connecting point.
         """
-        dists = self.connection_points - self.center
-        norm = np.linalg.norm(dists, axis=1)
-        # Return average norm. It can be harmful for highly non-symmetric bbs.
-        return np.mean(norm)
+        dists = self.connection_points - self.centroid
+        lengths = self.lengths
+        avg_len = np.mean(lengths)
+        max_len = np.max(lengths)
+
+        if avg_len < max_len-0.75:
+            return max_len - 0.75
+        else:
+            return avg_len
+
+    @property
+    def lengths(self):
+        dists = self.connection_points - self.centroid
+        norms = np.linalg.norm(dists, axis=1)
+        return norms
 
     @property
     def has_metal(self):

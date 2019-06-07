@@ -239,9 +239,7 @@ def normalize_positions(positions):
         distances = np.linalg.norm(positions, axis=1)
 
         # Normalize.
-        #positions = positions / distances[:, np.newaxis]
-        # Normalize by minimum length.
-        positions = positions / np.min(distances)
+        positions = positions / distances[:, np.newaxis]
 
         # Recenter
         cop = np.mean(positions, axis=0)

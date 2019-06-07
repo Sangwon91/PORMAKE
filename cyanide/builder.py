@@ -68,8 +68,8 @@ class Builder:
                 target = topology.local_structure(i)
                 located_node, rms = self.locator.locate(target, node_bb)
                 # Translate.
-                center = topology.atoms[i].position
-                located_node.set_center(center)
+                centroid = topology.atoms[i].position
+                located_node.set_centroid(centroid)
                 located_bbs[i] = located_node
                 logger.info(f"Node {i} is located, RMSD: {rms:.2E}")
 
@@ -176,12 +176,12 @@ class Builder:
                 image = calc_image(n1, n2, invc)
                 d = r2 - r1 + image@c
 
-                center = r1 + 0.5*d
+                centroid = r1 + 0.5*d
 
                 target = LocalStructure(np.array([r1, r1+d]), [i1, i2])
                 located_edge, rms = self.locator.locate(target, edge_bb)
 
-                located_edge.set_center(center)
+                located_edge.set_centroid(centroid)
                 located_bbs[e] = located_edge
 
                 logger.info(f"Edge {e} is located, RMSD: {rms:.2E}")
@@ -208,12 +208,12 @@ class Builder:
             image = calc_image(n1, n2, invc)
             d = r2 - r1 + image@c
 
-            center = r1 + 0.5*d
+            centroid = r1 + 0.5*d
 
             target = LocalStructure(np.array([r1, r1+d]), [i1, i2])
             located_edge, rms = self.locator.locate(target, edge_bb)
 
-            located_edge.set_center(center)
+            located_edge.set_centroid(centroid)
             located_bbs[e] = located_edge
 
             logger.info(f"Custom edge {e} is located, RMSD: {rms:.2E}")

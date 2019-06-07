@@ -358,6 +358,7 @@ class Scaler:
         new_data = [[] for _ in range(topology.n_all_points)]
         # Transform to Cartesian coordinates.
         r = s @ c
+        invc = np.linalg.inv(c)
         inv_old_c = np.linalg.inv(topology.atoms.cell)
         for e in topology.edge_indices:
             ni, nj = topology.neighbor_list[e]
@@ -379,7 +380,12 @@ class Scaler:
             d = rj - ri + np.dot(image, c)
 
             rc = ri + 0.5*d
-
+            # Select center position wrapped by unit cell.
+            rc = np.around(ri + 0.5*d, decimals=3)
+            sc = np.dot(rc, invc)
+            eps = 1e-4
+            if (sc < 0-eps).any() or (sc > 1+eps).any():
+                rc = np.around(rj - 0.5*d, decimals=3)
             r[e] = rc
 
             new_data[e] += [
