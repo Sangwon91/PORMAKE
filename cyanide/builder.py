@@ -46,7 +46,6 @@ class Builder:
                 continue
             edge.bonds
 
-        logger.info("Start placing nodes.")
         # Locate nodes and edges.
         located_bbs = [None for _ in range(topology.n_all_points)]
         permutations = [None for _ in range(topology.n_all_points)]
@@ -64,14 +63,13 @@ class Builder:
             # This information used in scaling of topology.
             permutations[i] = perm
 
-            #logger.info(f"Node {i} is located, RMSD: {rmsd:.2E}")
+            logger.info(f"Pre-location Node {i}, RMSD: {rmsd:.2E}")
 
         # Just append edges to the buidiling block slots.
         # There is no location in this stage.
         # This information is used in the scaling of topology.
         # All permutations are set to [0, 1] because the edges does not need
         # any permutation estimations for the locations.
-        logger.info("Start placing edges.")
         for e in topology.edge_indices:
             if e in custom_edge_bbs:
                 edge_bb = custom_edge_bbs[e]
@@ -88,6 +86,7 @@ class Builder:
         # Scale topology.
         scaler = Scaler(topology, located_bbs, permutations)
         # Change topology to scaled topology.
+        original_topology = topology
         topology = scaler.scale()
 
         # Relocate and translate node building blocks.
@@ -117,8 +116,10 @@ class Builder:
                 e: Edge index.
 
             External variables:
-                topology, located_bbs, permutations.
+                original_topology, located_bbs, permutations.
             """
+            topology = original_topology
+
             # i and j: edge index in topology
             n1, n2 = topology.neighbor_list[e]
 
@@ -133,7 +134,7 @@ class Builder:
                 # Check zero sum.
                 s = n.distance_vector + n1.distance_vector
                 s = np.linalg.norm(s)
-                if s < 1e-3:
+                if s < 0.01:
                     perm = permutations[i1]
                     a1 = bb1.connection_point_indices[perm][o]
                     break
@@ -143,7 +144,7 @@ class Builder:
                 # Check zero sum.
                 s = n.distance_vector + n2.distance_vector
                 s = np.linalg.norm(s)
-                if s < 1e-3:
+                if s < 0.01:
                     perm = permutations[i2]
                     a2 = bb2.connection_point_indices[perm][o]
                     break
