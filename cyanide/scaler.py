@@ -193,6 +193,13 @@ class Scaler:
 
         target_dots = np.sum(target_ij_vec*target_ik_vec, axis=-1)
 
+        # Get max / min ratio of edge length.
+        lengths = np.sqrt(target_dots[weights > 1.1])
+        max_len = np.max(lengths)
+        min_len = np.min(lengths)
+        ratio = max_len / min_len
+        logger.info("Max min ratio of edge length: %.3f", ratio)
+
         # Normalize target dots. This enhances the optimization convegences.
         max_dot = np.mean(np.abs(target_dots))
         target_dots /= max_dot
