@@ -139,6 +139,9 @@ class Scaler:
         ij_image = []
         ik_image = []
 
+        # Weights for objective function.
+        weights = []
+
         for i in topology.node_indices:
             neigbors = data_view[i]
             for (j, j_image), (k, k_image) in product(neigbors, repeat=2):
@@ -148,12 +151,19 @@ class Scaler:
                 ij_image.append(j_image)
                 ik_image.append(k_image)
 
+                if j == k:
+                    weights.append(2.0)
+                else:
+                    weights.append(1.0)
+
         # Type cast.
         ij = np.array(ij)
         ik = np.array(ik)
 
         ij_image = np.array(ij_image)
         ik_image = np.array(ik_image)
+
+        weights = np.array(weights)
 
         # Calculate target angles.
         vectors_view = defaultdict(list)
@@ -209,7 +219,7 @@ class Scaler:
 
         def objective(s, c):
             dots = calc_dots(s, c)
-            return tf.reduce_mean(tf.square(dots - target_dots))
+            return tf.reduce_mean(tf.square(dots-target_dots) * weights)
 
         # Functions for scipy interface.
         def fun(x):
