@@ -125,14 +125,15 @@ class Scaler:
         ji_vectors = np.array(ji_vectors)
 
         # Get angle triples.
-        # New data view of pairs and images for the triples.
-        # This is used for tensor operations during optimization.
+        # Triples are used for tensor operations during optimization.
+
+        # New data view of pairs and images for estimation of triples.
         data_view = defaultdict(list)
         for (i, j), image in zip(pairs, images):
             data_view[i].append((j, image))
             data_view[j].append((i, -image))
 
-        # Triples for the calculatation of  angle between r_{ij} and r_{ik}.
+        # Triples for the calculatation of dots between r_{ij} and r_{ik}.
         ij = []
         ik = []
 
@@ -152,6 +153,8 @@ class Scaler:
                 ik_image.append(k_image)
 
                 if j == k:
+                    # Optimize edge lengths more importantly.
+                    # Self dot product = square of vector length (j == k).
                     weights.append(2.0)
                 else:
                     weights.append(1.0)
@@ -166,6 +169,7 @@ class Scaler:
         weights = np.array(weights)
 
         # Calculate target angles.
+        # Similar method to above loops.
         vectors_view = defaultdict(list)
         for (i, j), v_ij, v_ji in zip(pairs, ij_vectors, ji_vectors):
             vectors_view[i].append(v_ij)
@@ -179,6 +183,7 @@ class Scaler:
         for i in topology.node_indices:
             # Get all connection point vectors of node i.
             vectors = vectors_view[i]
+            # Product includes self dot product (vj == vk).
             for vj, vk in product(vectors, repeat=2):
                 target_ij_vec.append(vj)
                 target_ik_vec.append(vk)
@@ -188,18 +193,23 @@ class Scaler:
 
         target_dots = np.sum(target_ij_vec*target_ik_vec, axis=-1)
 
-        # Normalize target dots.
-        #max_dot = np.max(np.abs(target_dots))
+        # Normalize target dots. This enhances the optimization convegences.
         max_dot = np.mean(np.abs(target_dots))
         target_dots /= max_dot
+
         # Helper functions for calculation of objective function.
         def calc_dots(s, c):
             """
+            Inputs:
+                s: scaled positions.
+                c: cell matrix (row is a lattice vector).
             External variables:
                 topology, pairs, image, ij, ik, ij_image, ik_image.
             """
             n = topology.n_all_points
 
+            # diff becames n x n x 3 tensor with element of
+            # diff[i, j, :] = si - sj.
             diff = s[tf.newaxis, :, :] - s[:, tf.newaxis, :]
 
             ij_vecs = (tf.gather_nd(diff, ij) + ij_image) @ c
@@ -208,14 +218,6 @@ class Scaler:
             dots = tf.reduce_sum(ij_vecs * ik_vecs, axis=-1)
 
             return dots
-
-        # Prepare geometry optimization.
-        c = topology.atoms.cell
-        s = topology.atoms.get_scaled_positions()
-
-        initial_dots = calc_dots(s, c).numpy()
-        #for i, (td, d) in enumerate(zip(target_dots, initial_dots)):
-        #    logger.info(f"{i:6d} {td:6.2f} {d:6.2f}")
 
         def objective(s, c):
             dots = calc_dots(s, c)
@@ -236,6 +238,7 @@ class Scaler:
             n = topology.n_all_points
             x = tf.constant(x)
 
+            # Use gradient tape for calculation of derivatives.
             with tf.GradientTape() as tape:
                 tape.watch(x)
 
@@ -249,18 +252,20 @@ class Scaler:
             return dx.numpy()
 
         # Prepare geometry optimization.
+        # Make initial value.
         c = topology.atoms.cell
         s = topology.atoms.get_scaled_positions()
+        x0 = np.concatenate([s.reshape(-1), c.reshape(-1)])
 
         # Bounds.
         zeros = np.zeros(shape=s.size)
         ones = np.ones(shape=s.size)
 
+        # Constaints for scaled positions.
         bounds = np.stack([zeros, ones], axis=1).tolist()
+        # No constraints on cell matrix values.
         for i in range(9):
             bounds.append([None, None])
-
-        x0 = np.concatenate([s.reshape(-1), c.reshape(-1)])
 
         logger.info("Topology optimization starts.")
         # Perform optimization.
@@ -274,6 +279,7 @@ class Scaler:
         )
 
         """
+        # Global optimization feature. Maybe used in future.
         result = sp.optimize.basinhopping(
                      x0=x0,
                      func=fun,
@@ -289,10 +295,6 @@ class Scaler:
                  )
         """
 
-        ##########################################################
-        # Should print the result of optimization in the future! #
-        ##########################################################
-
         n = topology.n_all_points
         # Get output x.
         x = result.x
@@ -301,20 +303,8 @@ class Scaler:
 
         logger.info("MESSAGE: %s", result.message)
         logger.info("SUCCESS: %s", result.success)
+        logger.info("ITER: %s", result.nit)
         logger.info("OBJ: %.3f", result.fun)
-        #logger.info(f"Cell:\n{c}")
-
-        """
-        # Check all lengths and angles.
-        dots = calc_dots(s, c).numpy()
-
-        logger.info("Optimized dot products.")
-        logger.info("| Index |  Target  |  Result  |  Initial  |")
-        diffs = np.abs(target_dots - dots)
-        iter_ = enumerate(zip(target_dots, dots, initial_dots))
-        for i, (td, d, inid) in iter_:
-            logger.info(f"{i:7d}   {td:8.3f}   {d:8.3f}   {inid:8.3f}")
-        """
 
         # Update neigbors list in topology.
         new_data = [[] for _ in range(topology.n_all_points)]
@@ -380,83 +370,3 @@ class Scaler:
         scaled_topology.neighbor_list.set_data(new_data)
 
         return scaled_topology
-
-    """
-    def calculate_max_min_edge_lengths(self,
-            topology, node_bbs, edge_bbs=None, custom_edge_bbs=None):
-        edge_lengths, custom_edge_lengths = \
-           self.calculate_edge_lengths(topology, node_bbs,
-                                       edge_bbs, custom_edge_bbs)
-        lengths = list(edge_lengths.values())
-        lengths += list(custom_edge_lengths.values())
-
-        max_len = max(lengths)
-        min_len = min(lengths)
-
-        return max_len, min_len
-
-    def calculate_edge_lengths(self,
-            topology, node_bbs, edge_bbs=None, custom_edge_bbs=None):
-        if edge_bbs is None:
-            edge_bbs = defaultdict(lambda: None)
-
-        # make empty dictionary.
-        if custom_edge_bbs is None:
-            custom_edge_bbs = {}
-
-        bond_length = 1.5
-
-        # Get unique types of topology edges.
-        edge_types = np.unique(
-            topology.edge_types[topology.edge_indices],
-            axis=0,
-        )
-
-        # Cast edge_bbs to defaultdict.
-        edge_bbs = defaultdict(lambda: None, edge_bbs)
-
-        # Calculate edge lengths of each type.
-        edge_lengths = {}
-        for i, j in edge_types:
-            # BuildingBlock.length is the length between centroid and
-            # a connection point.
-            len_i = node_bbs[i].length
-            len_j = node_bbs[j].length
-
-            length = len_i + len_j + bond_length
-
-            if edge_bbs[(i, j)] is not None:
-                length += 2.0*edge_bbs[(i, j)].length + bond_length
-
-            edge_lengths[(i, j)] = length
-
-            logger.debug(
-                f"Calculate length of edge type ({i}, {j}) = {length:.4f}")
-
-        custom_edge_lengths = {}
-        for e in custom_edge_bbs:
-            ni, nj = topology.neighbor_list[e]
-
-            i = ni.index
-            j = nj.index
-
-            ti, tj = topology.get_edge_type(e)
-
-            len_i = node_bbs[ti].length
-            len_j = node_bbs[tj].length
-
-            if custom_edge_bbs[e] is not None:
-                edge_bb_len = 2*custom_edge_bbs[e].length + bond_length
-            else:
-                edge_bb_len = 0.0
-
-            edge_length = len_i + len_j + bond_length + edge_bb_len
-
-            custom_edge_lengths[e] = edge_length
-
-            logger.debug(
-                f"Calculate edge index {e} (custom), Length: {edge_length:.4f}"
-            )
-
-        return edge_lengths, custom_edge_lengths
-    """
