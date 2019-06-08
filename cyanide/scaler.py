@@ -152,9 +152,11 @@ class Scaler:
                 ij_image.append(j_image)
                 ik_image.append(k_image)
 
-                if j == k:
+                if (j == k) and np.allclose(j_image, k_image):
                     # Optimize edge lengths more importantly.
                     # Self dot product = square of vector length (j == k).
+                    # np.allcolse neede because if should be same index with
+                    # same image (e.g, pcu can be problametic case).
                     weights.append(2.0)
                 else:
                     weights.append(1.0)
@@ -195,6 +197,8 @@ class Scaler:
 
         # Get max / min ratio of edge length.
         lengths = np.sqrt(target_dots[weights > 1.1])
+        #for l in lengths:
+        #    logger.info("Length: %.3f", l)
         max_len = np.max(lengths)
         min_len = np.min(lengths)
         ratio = max_len / min_len
