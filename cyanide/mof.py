@@ -1,4 +1,5 @@
 from pathlib import Path
+from collections import defaultdict
 
 import numpy as np
 
@@ -19,15 +20,22 @@ class MOF:
             self.wrap()
 
     def wrap(self):
-        # Wrap atoms.
-        eps = 1e-4
-        scaled_positions = self.atoms.get_scaled_positions()
-        scaled_positions = \
-            np.where(scaled_positions > 1.0-eps,
-                     np.zeros_like(scaled_positions),
-                     scaled_positions,
-            )
-        self.atoms.set_scaled_positions(scaled_positions)
+        # Cleanup errors.
+        s = self.atoms.get_scaled_positions()
+        while (s >= 1.0).any() and (s < 0.0).any():
+            s = np.where(s < 0.0,
+                    s + np.ones_like(s),
+                    s,
+                )
+            s = np.where(s >= 1.0,
+                    s - np.ones_like(s),
+                    s,
+                )
+
+        s[np.abs(s-1) < 1e-3] = 0.9999
+        s[np.abs(s) < 1e-3] = 0.0001
+
+        self.atoms.set_scaled_positions(s)
 
     def write_cif(self, filename):
         """
@@ -105,13 +113,15 @@ class MOF:
 
             # Get images and distances.
             I, J, S, D = ase.neighborlist.neighbor_list(
-                            "ijSd", self.atoms, cutoff=8.0)
+                            "ijSd", self.atoms, cutoff=4.0)
             image_dict = {}
-            distance_dict = {}
+            distance_dict = defaultdict(lambda: 1e30)
             origin = np.array([5, 5, 5])
             for i, j, s, d in zip(I, J, S, D):
-                image_dict[(i, j)] = origin + s
-                distance_dict[(i, j)] = d
+                # Take minimum image only.
+                if d < distance_dict[(i, j)]:
+                    image_dict[(i, j)] = origin + s
+                    distance_dict[(i, j)] = d
 
             for bond in self.bonds:
                 i, j = bond
