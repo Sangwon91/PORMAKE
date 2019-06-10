@@ -1,3 +1,5 @@
+import os
+import traceback
 from pathlib import Path
 from collections import defaultdict
 
@@ -41,7 +43,6 @@ class MOF:
         """
         Write MOF in cif format.
         """
-
         path = Path(filename).resolve()
         if not path.parent.exists():
             logger.error(f"Path {path} does not exist.")
@@ -50,7 +51,18 @@ class MOF:
         if path.suffix != ".cif":
             path = path.with_suffix(".cif")
 
-        # Replace space to underbar.
+        try:
+            self._write_cif(path)
+        except Exception as e:
+            logger.error(
+                "CIF writing fails with error: %s",
+                traceback.format_exc(),
+            )
+            # Remove invalid cif file.
+            logger.error("Remove invalid CIF: %s", path)
+            os.remove(str(path))
+
+    def _write_cif(self, path):
         stem = path.stem.replace(" ", "_")
 
         with path.open("w") as f:
