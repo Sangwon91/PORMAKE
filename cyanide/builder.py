@@ -197,7 +197,7 @@ class Builder:
             image = calc_image(n1, n2, invc)
             d = r2 - r1 + image@c
 
-            # This may outside of the unit cell. Should be changed.
+            ## This may outside of the unit cell. Should be changed.
             centroid = r1 + 0.5*d
 
             target = LocalStructure(np.array([r1, r1+d]), [i1, i2])
@@ -250,10 +250,16 @@ class Builder:
                 )
                 bonds.append((e1, a1))
                 bonds.append((e2, a2))
+                logger.info(
+                    "Bonds on topology edge %s are connected %s, %s.",
+                    j, bonds[-2], bonds[-1],
+                )
             else:
                 bonds.append((a1, a2))
-
-            logger.info(f"Bonds on topology edge {j} are connected.")
+                logger.info(
+                    "Bonds on topology edge %s are connected %s.",
+                    j, bonds[-1],
+                )
 
         bonds = np.array(bonds)
 
