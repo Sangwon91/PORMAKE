@@ -186,17 +186,19 @@ def read_budiling_block_xyz(bb_file):
         lines = f.readlines()
 
     n_atoms = int(lines[0])
-    connection_point_indices = [int(v)-1 for v in lines[1].split()]
 
     symbols = []
     positions = []
-    for line in lines[2:]:
+    connection_point_indices = []
+    for i, line in enumerate(lines[2:]):
         tokens = line.split()
         symbol = tokens[0]
         position = [float(v) for v in tokens[1:]]
 
         symbols.append(symbol)
         positions.append(position)
+        if symbol == "X":
+            connection_point_indices.append(i)
 
     info = {}
     info["cpi"] = connection_point_indices

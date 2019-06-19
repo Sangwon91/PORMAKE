@@ -276,6 +276,44 @@ class Builder:
         mof_atoms.set_pbc(True)
         mof_atoms.set_cell(topology.atoms.cell)
 
+        # Remove connection points (X) from the MOF.
+        count = 0
+        new_indices = {}
+        for a in mof_atoms:
+            if a.symbol == "X":
+                continue
+            new_indices[a.index] = count
+            count += 1
+
+        def is_X(i):
+            return mof_atoms[i].symbol == "X"
+
+        XX_bonds = []
+        new_bonds = []
+        X_neighbor_list = defaultdict(list)
+        for i, j in all_bonds:
+            if is_X(i) and is_X(j):
+                XX_bonds.append((i, j))
+            elif is_X(i):
+                X_neighbor_list[i] = j
+            elif is_X(j):
+                X_neighbor_list[j] = i
+            else:
+                new_bonds.append((i, j))
+
+        for i, j in XX_bonds:
+            new_bonds.append((
+                X_neighbor_list[i],
+                X_neighbor_list[j]
+            ))
+
+        all_bonds = [
+            (new_indices[i], new_indices[j]) for i, j in new_bonds
+        ]
+        all_bonds = np.array(all_bonds)
+
+        del mof_atoms[[a.symbol == "X" for a in mof_atoms]]
+
         info = {
             "topology": topology,
             "node_bbs": node_bbs,

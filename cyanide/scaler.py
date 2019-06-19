@@ -40,7 +40,7 @@ class Scaler:
         """
         logger.debug("Scaler.scale starts.")
 
-        bond_length = 1.5
+        bond_length = 0.0
         # Aliases.
         topology = self.topology
 
