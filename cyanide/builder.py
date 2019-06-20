@@ -221,16 +221,19 @@ class Builder:
                 index_offsets[i+1] = index_offsets[i] + bb.n_atoms
 
         bb_bonds = []
+        bb_bond_types = []
         for offset, bb in zip(index_offsets, located_bbs):
             if bb is None:
                 continue
             bb_bonds.append(bb.bonds + offset)
+            bb_bond_types += bb.bond_types
         bb_bonds = np.concatenate(bb_bonds, axis=0)
 
         logger.info("Start finding bonds between building blocks.")
 
         # Find bond between building blocks.
         bonds = []
+        bond_types = []
         for j in topology.edge_indices:
             a1, a2 = find_matched_atom_indices(j)
 
@@ -250,12 +253,14 @@ class Builder:
                 )
                 bonds.append((e1, a1))
                 bonds.append((e2, a2))
+                bond_types += ["S", "S"]
                 logger.info(
                     "Bonds on topology edge %s are connected %s, %s.",
                     j, bonds[-2], bonds[-1],
                 )
             else:
                 bonds.append((a1, a2))
+                bond_types += ["S"]
                 logger.info(
                     "Bonds on topology edge %s are connected %s.",
                     j, bonds[-1],
@@ -265,6 +270,7 @@ class Builder:
 
         # All bonds in generated MOF.
         all_bonds = np.concatenate([bb_bonds, bonds], axis=0)
+        all_bond_types = bb_bond_types + bond_types
 
         logger.info("Start Making MOF instance.")
         # Make full atoms from located building blocks.
@@ -290,8 +296,9 @@ class Builder:
 
         XX_bonds = []
         new_bonds = []
+        new_bond_types = []
         X_neighbor_list = defaultdict(list)
-        for i, j in all_bonds:
+        for (i, j), t in zip(all_bonds, all_bond_types):
             if is_X(i) and is_X(j):
                 XX_bonds.append((i, j))
             elif is_X(i):
@@ -300,17 +307,20 @@ class Builder:
                 X_neighbor_list[j] = i
             else:
                 new_bonds.append((i, j))
+                new_bond_types.append(t)
 
         for i, j in XX_bonds:
             new_bonds.append((
                 X_neighbor_list[i],
                 X_neighbor_list[j]
             ))
+            new_bond_types.append("S")
 
         all_bonds = [
             (new_indices[i], new_indices[j]) for i, j in new_bonds
         ]
         all_bonds = np.array(all_bonds)
+        all_bond_types = new_bond_types
 
         del mof_atoms[[a.symbol == "X" for a in mof_atoms]]
 
@@ -321,7 +331,7 @@ class Builder:
             "custom_edge_bbs": custom_edge_bbs,
         }
 
-        mof = MOF(mof_atoms, all_bonds, info=info, wrap=True)
+        mof = MOF(mof_atoms, all_bonds, all_bond_types, info=info, wrap=True)
         logger.info("Construction of MOF done.")
 
         return mof

@@ -1,4 +1,5 @@
 import os
+import copy
 import traceback
 from pathlib import Path
 from collections import defaultdict
@@ -12,11 +13,12 @@ import ase.neighborlist
 from .log import logger
 
 class MOF:
-    def __init__(self, atoms, bonds, info, wrap=True):
+    def __init__(self, atoms, bonds, bond_types, info, wrap=True):
         # Save data to attributes.
         self.atoms = atoms.copy()
         self.bonds = bonds.copy()
-        self.info = info
+        self.bond_types = copy.deepcopy(bond_types)
+        self.info = copy.deepcopy(info)
 
         if wrap:
             self.wrap()
@@ -123,6 +125,11 @@ class MOF:
             f.write("_geom_bond_site_symmetry_2\n")
             f.write("_ccdc_geom_bond_type\n") # ?????????
 
+            # Make bond type dict.
+            bond_type_dict = {}
+            for (i, j), t in zip(self.bonds, self.bond_types):
+                bond_type_dict[(i, j)] = t
+
             # Get images and distances.
             I, J, S, D = ase.neighborlist.neighbor_list(
                             "ijSd", self.atoms, cutoff=4.0)
@@ -145,15 +152,18 @@ class MOF:
                 label_j = "{}{}".format(sym, j)
 
                 distance = distance_dict[(i, j)]
+                bond_type = bond_type_dict[(i, j)]
 
                 image = image_dict[(i, j)]
 
                 if (image == origin).all():
-                    f.write("{} {} {:.3f} . S\n".
-                            format(label_i, label_j, distance))
+                    f.write("{} {} {:.3f} . {}\n".
+                        format(label_i, label_j, distance, bond_type)
+                    )
                 else:
-                    f.write("{} {} {:.3f} 1_{}{}{} S\n".
-                            format(label_i, label_j, distance, *image))
+                    f.write("{} {} {:.3f} 1_{}{}{} {}\n".
+                        format(label_i, label_j, distance, *image, bond_type)
+                    )
 
     def view(self):
         ase.visualize.view(self.atoms)

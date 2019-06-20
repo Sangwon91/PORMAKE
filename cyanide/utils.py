@@ -190,7 +190,7 @@ def read_budiling_block_xyz(bb_file):
     symbols = []
     positions = []
     connection_point_indices = []
-    for i, line in enumerate(lines[2:]):
+    for i, line in enumerate(lines[2 : n_atoms+2]):
         tokens = line.split()
         symbol = tokens[0]
         position = [float(v) for v in tokens[1:]]
@@ -200,10 +200,27 @@ def read_budiling_block_xyz(bb_file):
         if symbol == "X":
             connection_point_indices.append(i)
 
+    bonds = None
+    bond_types = None
+    if len(lines) > n_atoms+2:
+        logger.debug("There are bonds in building block xyz. Reading...")
+        bonds = []
+        bond_types = []
+
+        for line in lines[n_atoms+2:]:
+            tokens = line.split()
+            i = int(tokens[0])
+            j = int(tokens[1])
+            t = tokens[2]
+            bonds.append((i, j))
+            bond_types.append(t)
+        bonds = np.array(bonds)
+
     info = {}
     info["cpi"] = connection_point_indices
     info["name"] = name
-    info["bonds"] = None # To be done.
+    info["bonds"] = bonds
+    info["bond_types"] = bond_types
 
     atoms = ase.Atoms(symbols=symbols, positions=positions, info=info)
 

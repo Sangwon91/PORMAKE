@@ -16,6 +16,7 @@ class BuildingBlock:
         self.name = self.atoms.info["name"]
         self.connection_point_indices = np.array(self.atoms.info["cpi"])
         self._bonds = self.atoms.info["bonds"]
+        self._bond_types = self.atoms.info["bond_types"]
 
     def copy(self):
         return copy.deepcopy(self)
@@ -85,31 +86,42 @@ class BuildingBlock:
     @property
     def bonds(self):
         if self._bonds is None:
-            logger.debug("No bonds information. Start bond detection.")
-            r = self.atoms.positions
-            c = 1.2*np.array(ase.utils.natural_cutoffs(self.atoms))
-
-            diff = r[np.newaxis, :, :] - r[:, np.newaxis, :]
-            norms = np.linalg.norm(diff, axis=-1)
-            cutoffs = c[np.newaxis, :] + c[:, np.newaxis]
-
-            IJ = np.argwhere(norms < cutoffs)
-            I = IJ[:, 0]
-            J = IJ[:, 1]
-
-            indices = I < J
-
-            I = I[indices]
-            J = J[indices]
-
-            self._bonds = np.stack([I, J], axis=1)
-            logger.debug("Bond detection ends.")
+            self.calculate_bonds()
 
         return self._bonds
 
     @property
+    def bond_types(self):
+        if self._bond_types is None:
+            self.calculate_bonds()
+
+        return self._bond_types
+
+    @property
     def n_atoms(self):
         return len(self.atoms)
+
+    def calculate_bonds(self):
+        logger.debug("Start calculating bonds.")
+
+        r = self.atoms.positions
+        c = 1.2*np.array(ase.utils.natural_cutoffs(self.atoms))
+
+        diff = r[np.newaxis, :, :] - r[:, np.newaxis, :]
+        norms = np.linalg.norm(diff, axis=-1)
+        cutoffs = c[np.newaxis, :] + c[:, np.newaxis]
+
+        IJ = np.argwhere(norms < cutoffs)
+        I = IJ[:, 0]
+        J = IJ[:, 1]
+
+        indices = I < J
+
+        I = I[indices]
+        J = J[indices]
+
+        self._bonds = np.stack([I, J], axis=1)
+        self._bond_types = ["S" for _ in self.bonds]
 
     def view(self):
         ase.visualize.view(self.atoms)
