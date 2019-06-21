@@ -111,7 +111,7 @@ class Scaler:
 
             edge_length = len_i + len_j + bond_length
             if self.bbs[e] is not None:
-                edge_length += 2*self.bbs[e].length + bond_length
+                edge_length += 2*self.bbs[e].lengths[0] + bond_length
 
             # Rescaling.
             vec_i = vec_i / np.linalg.norm(vec_i) * edge_length

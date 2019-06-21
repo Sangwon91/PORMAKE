@@ -50,21 +50,6 @@ class BuildingBlock:
         return len(self.connection_point_indices)
 
     @property
-    def length(self):
-        """
-        distance between centroid and connecting point.
-        """
-        dists = self.connection_points - self.centroid
-        lengths = self.lengths
-        avg_len = np.mean(lengths)
-        max_len = np.max(lengths)
-
-        if avg_len < max_len-0.75:
-            return max_len - 0.75
-        else:
-            return avg_len
-
-    @property
     def lengths(self):
         dists = self.connection_points - self.centroid
         norms = np.linalg.norm(dists, axis=1)
