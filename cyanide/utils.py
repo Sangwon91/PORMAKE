@@ -209,6 +209,10 @@ def read_budiling_block_xyz(bb_file):
 
         for line in lines[n_atoms+2:]:
             tokens = line.split()
+            if len(tokens) < 3:
+                logger.debug("%s: len(line.split()) < 3 %s", bb_file, line)
+                continue
+
             i = int(tokens[0])
             j = int(tokens[1])
             t = tokens[2]
