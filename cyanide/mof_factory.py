@@ -1,3 +1,4 @@
+from pathlib import Path
 from itertools import product
 
 import numpy as np
@@ -122,7 +123,8 @@ class RandomMofFactory:
         self.all_node_bbs = np.array(all_node_bbs, dtype=object)
         self.all_edge_bbs = np.array(all_edge_bbs, dtype=object)
 
-    def manufacture(self, n_samples, max_rmsd=0.25, savedir="."):
+    def manufacture(self,
+            n_samples, max_rmsd=0.25, savedir=".", key_file="key.txt"):
         locator = Locator()
         builder = Builder()
 
@@ -131,6 +133,15 @@ class RandomMofFactory:
         n_all_edge_bbs = self.all_edge_bbs.shape[0]
 
         mof_book = set()
+        if Path(key_file).exists():
+            with open(key_file, "r") as f:
+                for line in f:
+                    mof_book.add(line.split()[1])
+
+            key_file = open(key_file, "a")
+        else:
+            key_file = open(key_file, "w")
+
         while len(mof_book) < n_samples:
             # Pick random topology
             i = np.random.randint(0, n_all_topologies)
@@ -181,10 +192,11 @@ class RandomMofFactory:
             if not has_metal:
                 continue
 
-            key = topology.name + "-"
-            for bb in node_bbs+list(edge_bbs.values()):
-                key += bb.name
+            key = topology.name + ":"
+            name_list = [bb.name for bb in node_bbs+list(edge_bbs.values())]
+            key += ":".join(name_list)
 
+            print("Trying key: {}".format(key))
             # Only unique MOFs.
             if key in mof_book:
                 continue
@@ -193,8 +205,16 @@ class RandomMofFactory:
 
             try:
                 n_mofs = len(mof_book)
-                print(n_mofs, key)
                 mof = builder.build(topology, node_bbs, edge_bbs)
+                abc = mof.atoms.get_cell_lengths_and_angles()[:3]
+                if (abc < 4.5).any():
+                    logger.warning("Too small cell. Skip.")
+                    continue
+
                 mof.write_cif("{}/{}.cif".format(savedir, n_mofs))
+
+                key_file.write("{} {}\n".format(n_mofs, key))
+                key_file.flush()
+                print(n_mofs, key)
             except Exception as e:
                 print(e)
