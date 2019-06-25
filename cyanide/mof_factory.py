@@ -115,3 +115,86 @@ class MofFactory:
         for edge_bbs in product(self.all_edge_bbs, repeat=n_edge_types):
             edge_bbs = {k: v for k, v in zip(unique_edge_types, edge_bbs)}
             yield edge_bbs
+
+class RandomMofFactory:
+    def __init__(self, all_topologies, all_node_bbs, all_edge_bbs):
+        self.all_topologies = np.array(all_topologies, dtype=object)
+        self.all_node_bbs = np.array(all_node_bbs, dtype=object)
+        self.all_edge_bbs = np.array(all_edge_bbs, dtype=object)
+
+    def manufacture(self, n_samples, max_rmsd=0.25, savedir="."):
+        locator = Locator()
+        builder = Builder()
+
+        n_all_topologies = self.all_topologies.shape[0]
+        n_all_node_bbs = self.all_node_bbs.shape[0]
+        n_all_edge_bbs = self.all_edge_bbs.shape[0]
+
+        mof_book = set()
+        while len(mof_book) < n_samples:
+            # Pick random topology
+            i = np.random.randint(0, n_all_topologies)
+            topology = self.all_topologies[i]
+
+            # Pick two edges.
+            indices = np.random.randint(0, n_all_edge_bbs, size=2)
+            two_edge_bbs = self.all_edge_bbs[indices]
+            def rand_edge():
+                if np.random.rand() < 0.5:
+                    return two_edge_bbs[0]
+                else:
+                    return two_edge_bbs[1]
+
+            edge_bbs = {
+                (i, j): rand_edge() for i, j in topology.unique_edge_types
+            }
+
+            # Pick random nodes.
+            local_structures = topology.unique_local_structures
+            node_bbs = []
+            for target in local_structures:
+                node_bb_found = False
+                perm = np.random.permutation(n_all_node_bbs)
+                for bb in self.all_node_bbs[perm]:
+                    if bb.n_connection_points != len(target.atoms):
+                        continue
+
+                    _, _, rmsd_ = locator.locate(target, bb)
+
+                    if rmsd_ <= max_rmsd:
+                        node_bbs.append(bb)
+                        node_bb_found = True
+                        break
+
+                if not node_bb_found:
+                    break
+
+            if len(node_bbs) != len(local_structures):
+                continue
+
+            has_metal = False
+            for bb in node_bbs+list(edge_bbs.values()):
+                if bb.has_metal:
+                    has_metal = True
+                    break
+            # Only MOFs.
+            if not has_metal:
+                continue
+
+            key = topology.name
+            for bb in node_bbs+list(edge_bbs.values()):
+                key += bb.name
+
+            # Only unique MOFs.
+            if key in mof_book:
+                continue
+
+            mof_book.add(key)
+
+            try:
+                n_mofs = len(mof_book)
+                print(n_mofs, key)
+                mof = builder.build(topology, node_bbs, edge_bbs)
+                mof.write_cif("{}/{}.cif".format(savedir, n_mofs))
+            except Exception as e:
+                print(e)
