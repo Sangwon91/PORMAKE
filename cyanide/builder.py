@@ -80,8 +80,18 @@ class Builder:
             if edge_bb is None:
                 continue
 
+            n1, n2 = topology.neighbor_list[e]
+
+            i1 = n1.index
+            i2 = n2.index
+
+            if topology.node_types[i1] <= topology.node_types[i2]:
+                perm = [0, 1]
+            else:
+                perm = [1, 0]
+
             located_bbs[e] = edge_bb
-            permutations[e] = np.array([0, 1])
+            permutations[e] = np.array(perm)
 
         # Scale topology.
         scaler = Scaler(topology, located_bbs, permutations)
@@ -199,11 +209,7 @@ class Builder:
 
             ## This may outside of the unit cell. Should be changed.
             centroid = r1 + 0.5*d
-
-            if topology.node_types[i1] <= topology.node_types[i2]:
-                perm = [0, 1]
-            else:
-                perm = [1, 0]
+            perm = permutations[e]
 
             target = LocalStructure(np.array([r1, r1+d]), [i1, i2])
             located_edge, rmsd = \
