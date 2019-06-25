@@ -181,7 +181,7 @@ class RandomMofFactory:
             if not has_metal:
                 continue
 
-            key = topology.name
+            key = topology.name + "-"
             for bb in node_bbs+list(edge_bbs.values()):
                 key += bb.name
 

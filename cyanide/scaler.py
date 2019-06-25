@@ -34,6 +34,7 @@ class Scaler:
         self.topology = topology
         self.bbs = bbs
         self.perms = perms
+        self.result = None
 
     def scale(self):
         """
@@ -290,6 +291,9 @@ class Scaler:
             bounds=bounds,
             options={"maxiter": 1000, "disp": False},
         )
+
+        # Save result.
+        self.result = result
 
         """
         # Global optimization feature. Maybe used in future.

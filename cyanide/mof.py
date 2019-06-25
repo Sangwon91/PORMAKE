@@ -82,6 +82,10 @@ class MOF:
                 for i, e in enumerate(self.info["custom_edge_bbs"]):
                     info_str += "#     [{}] {}\n".format(i, e)
             f.write(info_str)
+            f.write("# Relax obj value: {:.3f}\n"
+                    .format(self.info["relax_obj"]))
+            f.write("# Max RMSD: {:.3f}\n".format(self.info["max_rmsd"]))
+            f.write("# Mean RMSD: {:.3f}\n".format(self.info["mean_rmsd"]))
 
             f.write("data_{}\n".format(stem))
 

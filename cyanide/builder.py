@@ -98,7 +98,9 @@ class Builder:
         # Change topology to scaled topology.
         original_topology = topology
         topology = scaler.scale()
+        scaling_result = scaler.result
 
+        rmsd_values = []
         # Relocate and translate node building blocks.
         for i in topology.node_indices:
             perm = permutations[i]
@@ -118,6 +120,9 @@ class Builder:
             located_bbs[i] = located_node
 
             logger.info(f"Node {i}, RMSD: {rmsd:.3E}")
+
+            rmsd_values.append(rmsd)
+        rmsd_values = np.array(rmsd_values)
 
         # Thie helpers are so verbose. Anoying.
         def find_matched_atom_indices(e):
@@ -340,6 +345,9 @@ class Builder:
             "node_bbs": node_bbs,
             "edge_bbs": edge_bbs,
             "custom_edge_bbs": custom_edge_bbs,
+            "relax_obj": scaling_result.fun,
+            "max_rmsd": np.max(rmsd_values),
+            "mean_rmsd": np.mean(rmsd_values),
         }
 
         mof = MOF(mof_atoms, all_bonds, all_bond_types, info=info, wrap=True)
