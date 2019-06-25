@@ -31,6 +31,17 @@ METAL_LIKE = [
     "Es", "Fm", "Md", "No", "Lr",
 ]
 
+
+def bound_values(x, eps=1e-4):
+    """
+    Add description.
+    """
+    x = np.where(np.abs(x-0) < eps, np.full_like(x, 0+eps), x)
+    x = np.where(np.abs(x-1) < eps, np.full_like(x, 1-eps), x)
+
+    return x
+
+
 def covalent_neighbor_list(
         atoms, scale=1.2, neglected_species=[], neglected_indices=[]):
 

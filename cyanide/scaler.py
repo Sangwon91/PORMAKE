@@ -17,6 +17,8 @@ import scipy.optimize
 # For automatic differentiation.
 import tensorflow as tf
 
+from cyanide.utils import bound_values
+
 class Scaler:
     """
     Scale topology using given nodes and edges building blocks information.
@@ -345,10 +347,11 @@ class Scaler:
             d = rj - ri + np.dot(image, c)
 
             # Select center position wrapped by unit cell.
-            rc = np.around(ri + 0.5*d, decimals=3)
+            rc = ri + 0.5*d
             sc = np.dot(rc, invc)
-            eps = 1e-4
-            if (sc < 0-eps).any() or (sc > 1+eps).any():
+            # Boundary wrap
+            sc = bound_values(sc)
+            if (sc < 0).any() or (sc > 1).any():
                 rc = np.around(rj - 0.5*d, decimals=3)
             r[e] = rc
 
@@ -366,15 +369,21 @@ class Scaler:
             # Same order loop. Note that topology is the original.
             for n in topology.neighbor_list[i]:
                 e = n.index
+                d = n.distance_vector
                 # Find cross reference.
-                for j, v in new_data[e]:
-                    if i == j:
-                        # j and v saved.
+                for j, en in enumerate(topology.neighbor_list[e]):
+                    if np.linalg.norm(d+ en.distance_vector) < 1e-4:
+                        # j and en saved.
                         break
 
+                _, v = new_data[e][j]
                 new_data[i].append((e, -v))
 
         # Make scaled topology.
+        s = np.dot(r, invc)
+        s = bound_values(s)
+        r = np.dot(s, c)
+
         scaled_topology = topology.copy()
         scaled_topology.atoms.set_positions(r)
         scaled_topology.atoms.set_cell(c)
