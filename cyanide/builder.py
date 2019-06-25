@@ -200,9 +200,14 @@ class Builder:
             ## This may outside of the unit cell. Should be changed.
             centroid = r1 + 0.5*d
 
+            if topology.node_types[i1] <= topology.node_types[i2]:
+                perm = [0, 1]
+            else:
+                perm = [1, 0]
+
             target = LocalStructure(np.array([r1, r1+d]), [i1, i2])
             located_edge, rmsd = \
-                locator.locate_with_permutation(target, edge_bb, [0, 1])
+                locator.locate_with_permutation(target, edge_bb, perm)
 
             located_edge.set_centroid(centroid)
             located_bbs[e] = located_edge
