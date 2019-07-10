@@ -41,17 +41,17 @@ class MofFactory:
 
     def manufacture(self, savedir=".", stem=""):
         for i, (t, n, e) in enumerate(self.generate_valid_combinations()):
-            try:
-                logger.info(
-                    "{}'th MOF Construction, Topology: {}".format(i, t.name)
-                )
+           try:
+               logger.info(
+                   "{}'th MOF Construction, Topology: {}".format(i, t.name)
+               )
 
-                mof = self.builder.build(t, n, e)
-                save_path = f"{savedir}/{stem}{i}.cif"
-                logger.info(f"Writing cif. Save path: {save_path}")
-                mof.write_cif(save_path)
-            except Exception as e:
-                logger.error("MOF Build fails: {}".format(e))
+               mof = self.builder.build(t, n, e)
+               save_path = f"{savedir}/{stem}{i}.cif"
+               logger.info(f"Writing cif. Save path: {save_path}")
+               mof.write_cif(save_path)
+           except Exception as e:
+               logger.error("MOF Build fails: {}".format(e))
 
     def generate_valid_combinations(self):
         for topology in self.topologies:

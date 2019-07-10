@@ -136,7 +136,7 @@ class MOF:
 
             # Get images and distances.
             I, J, S, D = ase.neighborlist.neighbor_list(
-                            "ijSd", self.atoms, cutoff=4.0)
+                            "ijSd", self.atoms, cutoff=6.0)
             image_dict = {}
             distance_dict = defaultdict(lambda: 1e30)
             origin = np.array([5, 5, 5])
