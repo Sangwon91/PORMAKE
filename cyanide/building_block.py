@@ -18,6 +18,21 @@ class BuildingBlock:
         self._bonds = self.atoms.info["bonds"]
         self._bond_types = self.atoms.info["bond_types"]
 
+        # Check whether all atoms has bond or not.
+        if self._bonds is not None:
+            indices = set(np.array(self._bonds).reshape(-1))
+            #X_indices = set([a.index for a in self.atoms if a.symbol == "X"])
+            atom_indices = set([a.index for a in self.atoms])
+
+            sub = list(atom_indices - indices)
+
+            if len(sub) != 0:
+                pair = [(i, self.atoms.symbols[i]) for i in sub]
+                logger.warning(
+                    "There are atoms without bond: %s, %s.", self.name, pair,
+                )
+                #logger.warning("Make new bond for X.")
+
     def copy(self):
         return copy.deepcopy(self)
 
