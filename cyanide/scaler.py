@@ -16,6 +16,10 @@ import scipy.optimize
 
 # For automatic differentiation.
 import tensorflow as tf
+if tf.__version__[0] == "1":
+    logger.debug("Tensorflow v1 detected. Enable v2 behavior.")
+    tf.compat.v1.enable_eager_execution()
+    tf.compat.v1.enable_v2_behavior()
 
 from cyanide.utils import bound_values
 
@@ -267,7 +271,8 @@ class Scaler:
 
         # Prepare geometry optimization.
         # Make initial value.
-        c = topology.atoms.cell
+        # cell[:] cast ase.Cell to numpy array.
+        c = topology.atoms.cell[:]
         s = topology.atoms.get_scaled_positions()
         x0 = np.concatenate([s.reshape(-1), c.reshape(-1)])
 
