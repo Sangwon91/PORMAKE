@@ -6,6 +6,11 @@ import ase
 import ase.io
 import ase.neighborlist
 
+try:
+    from ase.utils import natural_cutoffs
+except Exception as e:
+    from ase.neighborlist import natural_cutoffs
+
 import pymatgen as mg
 
 from .log import logger
@@ -45,7 +50,7 @@ def bound_values(x, eps=1e-4):
 def covalent_neighbor_list(
         atoms, scale=1.2, neglected_species=[], neglected_indices=[]):
 
-    cutoffs = ase.utils.natural_cutoffs(atoms)
+    cutoffs = natural_cutoffs(atoms)
     cutoffs = [scale*c for c in cutoffs]
     # Remove radii to neglect them.
     species_indices = [
