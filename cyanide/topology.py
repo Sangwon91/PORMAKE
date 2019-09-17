@@ -1,4 +1,7 @@
+import os
 import copy
+import traceback
+from pathlib import Path
 
 import numpy as np
 
@@ -197,3 +200,147 @@ class Topology:
         msg = msg[:-1] + ")-cn, num edge types: {}".format(self.n_edge_types)
 
         return msg
+
+    def write_cif(self, filename):
+        """
+        Write topology in cif format.
+        """
+        path = Path(filename).resolve()
+        if not path.parent.exists():
+            logger.error(f"Path {path} does not exist.")
+
+        # Add suffix if not exists.
+        if path.suffix != ".cif":
+            path = path.with_suffix(".cif")
+
+        try:
+            self._write_cif(path)
+        except Exception as e:
+            logger.error(
+                "CIF writing fails with error: %s",
+                traceback.format_exc(),
+            )
+            # Remove invalid cif file.
+            logger.error("Remove invalid CIF: %s", path)
+            os.remove(str(path))
+
+    def _write_cif(self, path):
+        stem = path.stem.replace(" ", "_")
+
+        with path.open("w") as f:
+            # Write information comments.
+            f.write("# Topology {}\n".format(self.name))
+
+            # Real CIF information starts.
+            f.write("data_{}\n".format(self.name))
+
+            f.write("_symmetry_space_group_name_H-M    P1\n")
+            f.write("_symmetry_Int_Tables_number       1\n")
+            f.write("_symmetry_cell_setting            triclinic\n")
+
+            f.write("loop_\n")
+            f.write("_symmetry_equiv_pos_as_xyz\n")
+            f.write("'x, y, z'\n")
+
+            a, b, c, alpha, beta, gamma = \
+                self.atoms.get_cell_lengths_and_angles()
+
+            f.write("_cell_length_a     {:.3f}\n".format(a))
+            f.write("_cell_length_b     {:.3f}\n".format(b))
+            f.write("_cell_length_c     {:.3f}\n".format(c))
+            f.write("_cell_angle_alpha  {:.3f}\n".format(alpha))
+            f.write("_cell_angle_beta   {:.3f}\n".format(beta))
+            f.write("_cell_angle_gamma  {:.3f}\n".format(gamma))
+
+            f.write("loop_\n")
+            f.write("_atom_site_label\n")
+            f.write("_atom_site_type_symbol\n")
+            f.write("_atom_site_fract_x\n")
+            f.write("_atom_site_fract_y\n")
+            f.write("_atom_site_fract_z\n")
+            f.write("_atom_type_partial_charge\n")
+
+            def tag2symbol(tag):
+                ## 57: atomic number of the first lanthanide element.
+                # 7: Nitrogen.
+                return ase.Atom(tag+7).symbol
+
+            def tags2symbols(tags):
+                return [tag2symbol(tag) for tag in tags]
+
+            node_indices = self.node_indices
+            tags = self.atoms.get_tags()[node_indices]
+            symbols = tags2symbols(tags)
+            frac_coords = self.atoms.get_scaled_positions()[node_indices]
+            for i, (sym, pos) in enumerate(zip(symbols, frac_coords)):
+                label = "{}{}".format(sym, i)
+                f.write("{} {} {:.5f} {:.5f} {:.5f} 0.0\n".
+                        format(label, sym, *pos))
+
+            f.write("loop_\n")
+            f.write("_geom_bond_atom_site_label_1\n")
+            f.write("_geom_bond_atom_site_label_2\n")
+            f.write("_geom_bond_distance\n")
+            f.write("_geom_bond_site_symmetry_2\n")
+            f.write("_ccdc_geom_bond_type\n") # ?????????
+
+            origin = np.array([5, 5, 5])
+
+            eps = 1e-3
+            invcell = np.linalg.inv(self.atoms.get_cell())
+            bond_info = []
+            for i in self.node_indices:
+                for edge in self.neighbor_list[i]:
+                    k = edge.index
+                    d = edge.distance_vector
+                    found = False
+                    for node in self.neighbor_list[k]:
+                        abs_diff = np.abs(d - node.distance_vector)
+                        print(d)
+                        print(node.distance_vector)
+                        print(abs_diff)
+                        print("=====================================")
+                        if (abs_diff < eps).all():
+                            found = True
+                            break
+
+                    if not found:
+                        raise Exception("..?")
+
+                    j = node.index
+
+                    if i > j:
+                        continue
+
+                    rj = self.atoms[j].position
+                    ri = self.atoms[i].position
+                    rij = rj - ri
+
+                    image = np.dot(2*d-rij, invcell)
+                    image = np.around(image).astype(np.int32)
+
+                    distance = np.linalg.norm(2*d)
+
+                    bond_info.append((i, j, image, distance))
+
+            for i, j, image, distance in bond_info:
+                print(i, j, image)
+                sym = symbols[i]
+                label_i = "{}{}".format(sym, i)
+
+                sym = symbols[j]
+                label_j = "{}{}".format(sym, j)
+
+                bond_type = "S"
+
+                image = origin + image
+
+                if (image == origin).all():
+                    f.write("{} {} {:.3f} . {}\n".
+                        format(label_i, label_j, distance, bond_type)
+                    )
+                else:
+                    f.write("{} {} {:.3f} 1_{}{}{} {}\n".
+                        format(label_i, label_j, distance, *image, bond_type)
+                    )
+
