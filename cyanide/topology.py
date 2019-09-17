@@ -316,10 +316,6 @@ class Topology:
                     found = False
                     for node in self.neighbor_list[k]:
                         abs_diff = np.abs(d - node.distance_vector)
-                        print(d)
-                        print(node.distance_vector)
-                        print(abs_diff)
-                        print("=====================================")
                         if (abs_diff < eps).all():
                             found = True
                             break
@@ -344,7 +340,6 @@ class Topology:
                     bond_info.append((i, j, image, distance))
 
             for i, j, image, distance in bond_info:
-                print(i, j, image)
                 sym = symbols[i]
                 label_i = "{}{}".format(sym, i)
 
