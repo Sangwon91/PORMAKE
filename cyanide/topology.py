@@ -22,7 +22,7 @@ class Topology:
         self.spacegroup = self.atoms.info["spacegroup"]
 
         self.neighbor_list = NeighborList(self.atoms, method="distance")
-        if not self.check_coordination_numbers():
+        if not self.check_validity():
             logger.debug(
                 "{}: Distance based parsing fails.. "
                 "Try nearest two method.".format(self.name)
@@ -30,7 +30,7 @@ class Topology:
             self.neighbor_list = \
                 NeighborList(self.atoms, method="nearest")
 
-        if not self.check_coordination_numbers():
+        if not self.check_validity():
             logger.error(
                 "Topology parsing fails: {}".format(self.name)
             )
@@ -47,6 +47,26 @@ class Topology:
         for cn, ns in zip(self.atoms.info["cn"], self.neighbor_list):
             if cn != len(ns):
                 return False
+        return True
+
+    def check_edge_zerosum(self):
+        eps = 1e-3
+        edge_indices = np.argwhere(self.atoms.get_tags() == -1).reshape(-1)
+        for e in edge_indices:
+            n1, n2 = self.neighbor_list[e]
+
+            zerosum = n1.distance_vector + n2.distance_vector
+            zerosum = np.abs(zerosum)
+
+            if (zerosum > eps).any():
+                return False
+        return True
+
+    def check_validity(self):
+        if not self.check_coordination_numbers():
+            return False
+        if not self.check_edge_zerosum():
+            return False
         return True
 
     def copy(self):
