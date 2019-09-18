@@ -221,7 +221,7 @@ class Topology:
 
         return msg
 
-    def write_cif(self, filename):
+    def write_cif(self, filename, *args, **kwargs):
         """
         Write topology in cif format.
         """
@@ -234,7 +234,7 @@ class Topology:
             path = path.with_suffix(".cif")
 
         try:
-            self._write_cif(path)
+            self._write_cif(path, *args, **kwargs)
         except Exception as e:
             logger.error(
                 "CIF writing fails with error: %s",
@@ -244,7 +244,7 @@ class Topology:
             logger.error("Remove invalid CIF: %s", path)
             os.remove(str(path))
 
-    def _write_cif(self, path):
+    def _write_cif(self, path, scale=1.0):
         stem = path.stem.replace(" ", "_")
 
         with path.open("w") as f:
@@ -265,9 +265,9 @@ class Topology:
             a, b, c, alpha, beta, gamma = \
                 self.atoms.get_cell_lengths_and_angles()
 
-            f.write("_cell_length_a     {:.3f}\n".format(a))
-            f.write("_cell_length_b     {:.3f}\n".format(b))
-            f.write("_cell_length_c     {:.3f}\n".format(c))
+            f.write("_cell_length_a     {:.3f}\n".format(a*scale))
+            f.write("_cell_length_b     {:.3f}\n".format(b*scale))
+            f.write("_cell_length_c     {:.3f}\n".format(c*scale))
             f.write("_cell_angle_alpha  {:.3f}\n".format(alpha))
             f.write("_cell_angle_beta   {:.3f}\n".format(beta))
             f.write("_cell_angle_gamma  {:.3f}\n".format(gamma))
@@ -349,6 +349,7 @@ class Topology:
                 bond_type = "S"
 
                 image = origin + image
+                distance *= scale
 
                 if (image == origin).all():
                     f.write("{} {} {:.3f} . {}\n".
