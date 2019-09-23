@@ -3,8 +3,6 @@ import numpy as np
 import ase
 import ase.visualize
 
-from .utils import normalize_positions
-
 class LocalStructure:
     def __init__(self, positions, indices):
         """
@@ -14,34 +12,63 @@ class LocalStructure:
         The center of local structure is zero vector.
         """
         # Normalize before using.
-        self.atoms = ase.Atoms(positions=normalize_positions(positions))
+        self.atoms = ase.Atoms(
+                         positions=self.normalize_positions(positions))
         self.indices = np.array(indices, dtype=np.int32)
 
     @property
     def positions(self):
         return self.atoms.positions
 
-    def matching_permutation(self, other):
+    def normalize_positions(self, positions):
         """
-        Match one-to-one index to other local structure.
-        self.positions = other.positions[matching_permutation]
+        Normalize the distance between "center of positions" and
+        "a position" to one.
+        And move the center of positions to zero
         """
-        pos_i = self.positions
-        pos_j = other.positions
+        # Get the center of position.
+        cop = np.mean(positions, axis=0)
 
-        assert len(pos_i) == len(pos_j)
+        # Move cop to zero
+        positions = positions - cop
 
-        # Calculate all distances.
-        diffs = pos_i[:, np.newaxis, :] - pos_j[np.newaxis, :, :]
-        norms = np.linalg.norm(diffs, axis=2)
+        # Calculate distances for the normalization.
+        distances = np.linalg.norm(positions, axis=1)
 
-        # Get minimum distance indices as permutation.
-        permutation = np.argmin(norms, axis=1)
+        # Normalize.
+        positions = positions / distances[:, np.newaxis]
 
-        # Check uniqueness.
-        assert len(set(permutation)) == len(permutation)
+        # Get the center of position.
+        max_loop = 100
+        n_loop = 0
+        cop = np.mean(positions, axis=0)
+        while (np.abs(cop) > 1e-4).any():
+            #print("COP:", cop)
+            # Move cop to zero
+            positions = positions - cop
 
-        return permutation
+            # Calculate distances for the normalization.
+            distances = np.linalg.norm(positions, axis=1)
+
+            # Normalize.
+            positions = positions / distances[:, np.newaxis]
+
+            # Recenter
+            cop = np.mean(positions, axis=0)
+            positions = positions - cop
+
+            n_loop += 1
+            if n_loop > max_loop:
+                logger.warning(
+                    f"Max iter in position normalization exceed, Centroid: {cop}"
+                )
+                break
+
+        # Recenter
+        cop = np.mean(positions, axis=0)
+        positions = positions - cop
+
+        return positions
 
     def view(self):
         ase.visualize.view(self.atoms)
