@@ -21,54 +21,22 @@ class LocalStructure:
         return self.atoms.positions
 
     def normalize_positions(self, positions):
-        """
-        Normalize the distance between "center of positions" and
-        "a position" to one.
-        And move the center of positions to zero
-        """
-        # Get the center of position.
-        cop = np.mean(positions, axis=0)
+        # Calculate centroid.
+        centroid = np.mean(positions, axis=0)
 
-        # Move cop to zero
-        positions = positions - cop
-
-        # Calculate distances for the normalization.
+        # Calculate norms of the connection points.
+        positions = positions - centroid
         distances = np.linalg.norm(positions, axis=1)
 
-        # Normalize.
+        # Normalize norm of connection points.
         positions = positions / distances[:, np.newaxis]
 
-        # Get the center of position.
-        max_loop = 100
-        n_loop = 0
-        cop = np.mean(positions, axis=0)
-        while (np.abs(cop) > 1e-4).any():
-            #print("COP:", cop)
-            # Move cop to zero
-            positions = positions - cop
-
-            # Calculate distances for the normalization.
-            distances = np.linalg.norm(positions, axis=1)
-
-            # Normalize.
-            positions = positions / distances[:, np.newaxis]
-
-            # Recenter
-            cop = np.mean(positions, axis=0)
-            positions = positions - cop
-
-            n_loop += 1
-            if n_loop > max_loop:
-                logger.warning(
-                    f"Max iter in position normalization exceed, Centroid: {cop}"
-                )
-                break
-
-        # Recenter
-        cop = np.mean(positions, axis=0)
-        positions = positions - cop
-
+        # Warning: the centroid of positions are not the zero.
         return positions
 
-    def view(self):
-        ase.visualize.view(self.atoms)
+    def view(self, show_origin=True):
+        if show_origin:
+            atoms = self.atoms + ase.Atom("He")
+        else:
+            atoms = self.atoms
+        ase.visualize.view(atoms)
