@@ -27,6 +27,11 @@ class BuildingBlock:
     def copy(self):
         return copy.deepcopy(self)
 
+    def make_chiral_building_block(self):
+        _bb = self.copy()
+        _bb.atoms.set_positions(-_bb.atoms.get_positions())
+        return _bb
+
     def local_structure(self):
         connection_points = self.atoms[self.connection_point_indices].positions
         return LocalStructure(connection_points, self.connection_point_indices)

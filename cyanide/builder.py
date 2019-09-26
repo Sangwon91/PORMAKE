@@ -60,23 +60,46 @@ class Builder:
             # Calculate minimum RMSD of the slot.
             if slot_min_rmsd[t] < 0.0:
                 _, _, rmsd = locator.locate(target, node_bb, max_n_slices=6)
-                slot_min_rmsd[t] = rmsd
-                logger.info("Min RMSD of slot type %d: %.2E", t, rmsd)
+                _, _, c_rmsd = \
+                    locator.locate(
+                        target, node_bb.make_chiral_building_block(),
+                        max_n_slices=6
+                    )
+                slot_min_rmsd[t] = min(rmsd, c_rmsd)
+                logger.info(
+                    "== Min RMSD of slot type %d: %.2E", t, slot_min_rmsd[t]
+                )
             # Only orientation.
             # Translations are applied after topology relexation.
             located_node, perm, rmsd = locator.locate(target, node_bb)
             logger.info(f"Pre-location Node {i}, RMSD: {rmsd:.2E}")
             # If RMSD is different from min RMSD relocate with high accuracy.
             # 1% error.
-            ratio = rmsd/slot_min_rmsd[t]
+            ratio = rmsd / slot_min_rmsd[t]
             if ratio > 1.01:
                 located_node, perm, rmsd = \
                     locator.locate(target, node_bb, max_n_slices=6)
                 logger.info(
                     "RMSD > MIN_RMSD*1.01, relocate Node %d"
-                    " with high accuracy, RMSD: %.2E", i, rmsd
+                    " with high accuracy (%d), RMSD: %.2E",
+                    i, 6, rmsd
                 )
-            elif ratio < 0.99:
+
+            ratio = rmsd / slot_min_rmsd[t]
+            if ratio > 1.01:
+                # Make chiral building block.
+                node_bb = node_bb.make_chiral_building_block()
+                located_node, perm, rmsd = \
+                    locator.locate(target, node_bb, max_n_slices=6)
+                logger.info(
+                    "RMSD > MIN_RMSD*1.01, relocate Node %d"
+                    " with high accuracy (%d) and chiral building block"
+                    ", RMSD: %.2E",
+                    i, 6, rmsd
+                )
+
+            # Critical error.
+            if ratio < 0.99:
                 message = (
                     "MIN_RMSD is not collect. "
                     "Topology: %s; "
@@ -131,7 +154,8 @@ class Builder:
             perm = permutations[i]
             # Get node bb.
             t = topology.get_node_type(i)
-            node_bb = node_bbs[t]
+            #node_bb = node_bbs[t]
+            node_bb = located_bbs[i]
             # Get target.
             target = topology.local_structure(i)
             # Orientation.

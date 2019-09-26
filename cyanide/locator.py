@@ -2,6 +2,7 @@ import itertools
 
 import numpy as np
 
+from .log import logger
 from .third_party.rmsd import rmsd
 
 class Locator:
@@ -27,11 +28,13 @@ class Locator:
         if n_points == 2:
             n_slices = 1
         elif n_points == 3:
-            n_slices = 2
+            n_slices = max_n_slices - 2
         elif n_points == 4:
-            n_slices = 3
+            n_slices = max_n_slices - 1
         else:
             n_slices = max_n_slices
+
+        logger.debug("n_slices: %d", n_slices)
 
         alpha = np.linspace(0, 360, n_slices)
         beta = np.linspace(0, 180, n_slices)
@@ -42,7 +45,7 @@ class Locator:
             # Copy atoms object for euler rotation.
             atoms = local1.atoms.copy()
             # Rotate.
-            atoms.euler_rotate(a, b, g)
+            atoms.euler_rotate(a, b, g, center=(0, 0, 0))
 
             # Reorder coordinates.
             q_coord = atoms.positions
