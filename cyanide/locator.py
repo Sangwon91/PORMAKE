@@ -5,7 +5,7 @@ import numpy as np
 from .third_party.rmsd import rmsd
 
 class Locator:
-    def locate(self, target, bb):
+    def locate(self, target, bb, max_n_slices=4):
         """
         Locate building block (bb) to target_points
         using the connection points of the bb.
@@ -31,7 +31,7 @@ class Locator:
         elif n_points == 4:
             n_slices = 3
         else:
-            n_slices = 4
+            n_slices = max_n_slices
 
         alpha = np.linspace(0, 360, n_slices)
         beta = np.linspace(0, 180, n_slices)

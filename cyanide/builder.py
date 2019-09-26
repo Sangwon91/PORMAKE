@@ -49,6 +49,7 @@ class Builder:
         # Locate nodes and edges.
         located_bbs = [None for _ in range(topology.n_all_points)]
         permutations = [None for _ in range(topology.n_all_points)]
+        slot_min_rmsd = defaultdict(lambda: -1.0)
         # Locate nodes.
         for i in topology.node_indices:
             # Get bb.
@@ -56,14 +57,38 @@ class Builder:
             node_bb = node_bbs[t]
             # Get target.
             target = topology.local_structure(i)
+            # Calculate minimum RMSD of the slot.
+            if slot_min_rmsd[t] < 0.0:
+                _, _, rmsd = locator.locate(target, node_bb, max_n_slices=6)
+                slot_min_rmsd[t] = rmsd
+                logger.info("Min RMSD of slot type %d: %.2E", t, rmsd)
             # Only orientation.
             # Translations are applied after topology relexation.
             located_node, perm, rmsd = locator.locate(target, node_bb)
+            logger.info(f"Pre-location Node {i}, RMSD: {rmsd:.2E}")
+            # If RMSD is different from min RMSD relocate with high accuracy.
+            # 1% error.
+            ratio = rmsd/slot_min_rmsd[t]
+            if ratio > 1.01:
+                located_node, perm, rmsd = \
+                    locator.locate(target, node_bb, max_n_slices=6)
+                logger.info(
+                    "RMSD > MIN_RMSD*1.01, relocate Node %d"
+                    " with high accuracy, RMSD: %.2E", i, rmsd
+                )
+            elif ratio < 0.99:
+                message = (
+                    "MIN_RMSD is not collect. "
+                    "Topology: %s; "
+                    "Slot: %d; "
+                    "Building block: %s." % (topology, t, node_bb)
+                )
+                logger.error(message)
+                raise Exception(message)
+
             located_bbs[i] = located_node
             # This information used in scaling of topology.
             permutations[i] = perm
-
-            logger.info(f"Pre-location Node {i}, RMSD: {rmsd:.2E}")
 
         # Just append edges to the buidiling block slots.
         # There is no location in this stage.
