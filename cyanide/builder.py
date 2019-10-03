@@ -86,7 +86,7 @@ class Builder:
                 )
 
             ratio = rmsd / slot_min_rmsd[t]
-            if (ratio > 1.01) and (slot_min_rmsd[t] > 1e-4):
+            if ratio > 1.01:
                 # Make chiral building block.
                 node_bb = node_bb.make_chiral_building_block()
                 located_node, perm, rmsd = \
@@ -99,12 +99,13 @@ class Builder:
                 )
 
             # Critical error.
-            if ratio < 0.99:
+            if (ratio < 0.99) and (slot_min_rmsd[t] > 1e-3):
                 message = (
                     "MIN_RMSD is not collect. "
                     "Topology: %s; "
                     "Slot: %d; "
-                    "Building block: %s." % (topology, t, node_bb)
+                    "Building block: %s; "
+                    "rmsd: %.3E." % (topology, t, node_bb, rmsd)
                 )
                 logger.error(message)
                 raise Exception(message)
