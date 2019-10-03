@@ -86,7 +86,7 @@ class Builder:
                 )
 
             ratio = rmsd / slot_min_rmsd[t]
-            if ratio > 1.01:
+            if (ratio > 1.01) and (slot_min_rmsd[t] > 1e-4):
                 # Make chiral building block.
                 node_bb = node_bb.make_chiral_building_block()
                 located_node, perm, rmsd = \
