@@ -245,3 +245,87 @@ def read_budiling_block_xyz(bb_file):
     atoms = ase.Atoms(symbols=symbols, positions=positions, info=info)
 
     return atoms
+
+
+def write_molecule_cif(filename, atoms, bond_pairs, bond_types):
+    """
+    Write cif for the molecule structures.
+
+    Args:
+        filename: file name.
+        atoms: ase.Atoms object.
+        bond_pairs: list of bond paris. contains (i, j).
+        bond_types: list of bond types. contains one of "S", "D", "T", "A".
+
+    Returns:
+        None
+    """
+
+    path = Path(filename).resolve()
+    if path.suffix != ".cif":
+        path = path.with_suffix(".cif")
+
+    stem = path.stem.replace(" ", "_")
+    with path.open("w") as f:
+        f.write("data_{}\n".format(stem))
+
+        f.write("_symmetry_space_group_name_H-M    P1\n")
+        f.write("_symmetry_Int_Tables_number       1\n")
+        f.write("_symmetry_cell_setting            triclinic\n")
+
+        f.write("loop_\n")
+        f.write("_symmetry_equiv_pos_as_xyz\n")
+        f.write("'x, y, z'\n")
+       
+        # Calculate cell parameters.
+        positions = atoms.get_positions()
+        com = atoms.get_center_of_mass()
+
+        distances = np.linalg.norm(positions - com, axis=1)
+        max_distances = np.max(distances)
+
+        box_length = 2*max_distances + 4
+
+        f.write("_cell_length_a     {:.3f}\n".format(box_length))
+        f.write("_cell_length_b     {:.3f}\n".format(box_length))
+        f.write("_cell_length_c     {:.3f}\n".format(box_length))
+        f.write("_cell_angle_alpha  90.0\n")
+        f.write("_cell_angle_beta   90.0\n")
+        f.write("_cell_angle_gamma  90.0\n")
+
+        f.write("loop_\n")
+        f.write("_atom_site_label\n")
+        f.write("_atom_site_type_symbol\n")
+        f.write("_atom_site_fract_x\n")
+        f.write("_atom_site_fract_y\n")
+        f.write("_atom_site_fract_z\n")
+        f.write("_atom_type_partial_charge\n")
+       
+        # Get fractional coordinates
+        # fractional coordinate of C.O.M is (0.5, 0.5, 0.5).
+        symbols = atoms.get_chemical_symbols()
+        fracts = (positions - com) / box_length + 0.5
+
+        # Write label and pos information.
+        for i, (sym, fract) in enumerate(zip(symbols, fracts)):
+            label = "{}{}".format(sym, i)
+            f.write("{} {} {:.5f} {:.5f} {:.5f} 0.0\n".
+                    format(label, sym, *fract))
+
+        # Write bonds information.
+        f.write("loop_\n")
+        f.write("_geom_bond_atom_site_label_1\n")
+        f.write("_geom_bond_atom_site_label_2\n")
+        f.write("_geom_bond_distance\n")
+        f.write("_geom_bond_site_symmetry_2\n")
+        f.write("_ccdc_geom_bond_type\n")
+       
+        for (i, j), t in zip(bond_pairs, bond_types):
+            label_i = "{}{}".format(symbols[i], i)
+            label_j = "{}{}".format(symbols[j], j)
+
+            distance = np.linalg.norm(positions[i]-positions[j])
+
+            f.write("{} {} {:.3f} . {}\n".
+                format(label_i, label_j, distance, t)
+            )

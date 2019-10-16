@@ -11,7 +11,12 @@ except Exception as e:
     from ase.neighborlist import natural_cutoffs
 
 from .log import logger
-from .utils import read_budiling_block_xyz, covalent_neighbor_list, METAL_LIKE
+from .utils import (
+    read_budiling_block_xyz,
+    covalent_neighbor_list,
+    write_molecule_cif,
+    METAL_LIKE,
+)
 from .local_structure import LocalStructure
 
 class BuildingBlock:
@@ -145,3 +150,6 @@ class BuildingBlock:
             self.name, self.n_connection_points
         )
         return msg
+
+    def write_cif(self, filename):
+        write_molecule_cif(filename, self.atoms, self.bonds, self.bond_types)

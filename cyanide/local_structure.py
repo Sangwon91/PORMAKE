@@ -3,6 +3,8 @@ import numpy as np
 import ase
 import ase.visualize
 
+from .utils import write_molecule_cif
+
 class LocalStructure:
     def __init__(self, positions, indices):
         """
@@ -33,6 +35,13 @@ class LocalStructure:
 
         # Warning: the centroid of positions are not the zero.
         return positions
+
+    def write_cif(self, filename):
+        atoms = ase.Atoms("He") + self.atoms
+        bonds = [(0, i) for i in range(len(atoms))]
+        bond_types = ["S" for _ in bonds]
+
+        write_molecule_cif(filename, atoms, bonds, bond_types)
 
     def view(self, show_origin=True):
         if show_origin:
