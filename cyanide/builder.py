@@ -10,41 +10,20 @@ from .local_structure import LocalStructure
 
 # bb: building block.
 class Builder:
-    def build(self, topology, node_bbs, edge_bbs=None, custom_edge_bbs=None):
+    def build(self, topology, bbs):
         """
         The node_bbs must be given with proper order.
         Same as node type order in topology.
 
-        Inputs:
-            custom_edge_bbs: Custom edge building blocks at specific edge
-                index e. It is a dict, keys are edge index and values are
-                building block.
+        Args:
+            bbs: a list like obejct containing building blocks.
+                 bbs[i] contains a bb for node[i] if i in topology.node_indices
+                 or edge[i] if i in topology.edge_indices.
         """
         logger.debug("Builder.build starts.")
 
         # locator for bb locations.
         locator = Locator()
-
-        if edge_bbs is None:
-            edge_bbs = defaultdict(lambda: None)
-        else:
-            edge_bbs = defaultdict(lambda: None, edge_bbs)
-
-        # make empty dictionary.
-        if custom_edge_bbs is None:
-            custom_edge_bbs = {}
-
-        assert topology.n_node_types == len(node_bbs)
-
-        # Calculate bonds before start.
-        logger.info("Start pre-calculation of bonds in building blocks.")
-        for node in node_bbs:
-            node.bonds
-
-        for edge in edge_bbs.values():
-            if edge is None:
-                continue
-            edge.bonds
 
         # Locate nodes and edges.
         located_bbs = [None for _ in range(topology.n_all_points)]
@@ -54,28 +33,33 @@ class Builder:
         for i in topology.node_indices:
             # Get bb.
             t = topology.get_node_type(i)
-            node_bb = node_bbs[t]
+            node_bb = bbs[i]
             # Get target.
             target = topology.local_structure(i)
             # Calculate minimum RMSD of the slot.
-            if slot_min_rmsd[t] < 0.0:
+            key = (t, node_bb.name)
+            if slot_min_rmsd[key] < 0.0:
                 _, _, rmsd = locator.locate(target, node_bb, max_n_slices=6)
                 _, _, c_rmsd = \
                     locator.locate(
                         target, node_bb.make_chiral_building_block(),
                         max_n_slices=6
                     )
-                slot_min_rmsd[t] = min(rmsd, c_rmsd)
+                slot_min_rmsd[key] = min(rmsd, c_rmsd)
                 logger.info(
-                    "== Min RMSD of slot type %d: %.2E", t, slot_min_rmsd[t]
+                    "== Min RMSD of slot type %s: %.2E",
+                    key, slot_min_rmsd[key]
                 )
             # Only orientation.
             # Translations are applied after topology relexation.
             located_node, perm, rmsd = locator.locate(target, node_bb)
-            logger.info(f"Pre-location Node {i}, RMSD: {rmsd:.2E}")
+            logger.info(
+                "Pre-location Node %d, Type %s, RMSD: %.2E",
+                i, key, rmsd,
+            )
             # If RMSD is different from min RMSD relocate with high accuracy.
             # 1% error.
-            ratio = rmsd / slot_min_rmsd[t]
+            ratio = rmsd / slot_min_rmsd[key]
             if ratio > 1.01:
                 located_node, perm, rmsd = \
                     locator.locate(target, node_bb, max_n_slices=6)
@@ -85,7 +69,7 @@ class Builder:
                     i, 6, rmsd
                 )
 
-            ratio = rmsd / slot_min_rmsd[t]
+            ratio = rmsd / slot_min_rmsd[key]
             if ratio > 1.01:
                 # Make chiral building block.
                 node_bb = node_bb.make_chiral_building_block()
@@ -99,13 +83,13 @@ class Builder:
                 )
 
             # Critical error.
-            if (ratio < 0.99) and (slot_min_rmsd[t] > 1e-3):
+            if (ratio < 0.99) and (slot_min_rmsd[key] > 1e-3):
                 message = (
                     "MIN_RMSD is not collect. "
                     "Topology: %s; "
-                    "Slot: %d; "
+                    "Slot: %s; "
                     "Building block: %s; "
-                    "rmsd: %.3E." % (topology, t, node_bb, rmsd)
+                    "rmsd: %.3E." % (topology, key, node_bb, rmsd)
                 )
                 logger.error(message)
                 raise Exception(message)
@@ -120,11 +104,7 @@ class Builder:
         # All permutations are set to [0, 1] because the edges does not need
         # any permutation estimations for the locations.
         for e in topology.edge_indices:
-            if e in custom_edge_bbs:
-                edge_bb = custom_edge_bbs[e]
-            else:
-                ti, tj = topology.get_edge_type(e)
-                edge_bb = edge_bbs[(ti, tj)]
+            edge_bb = bbs[e]
 
             if edge_bb is None:
                 continue
@@ -153,9 +133,6 @@ class Builder:
         # Relocate and translate node building blocks.
         for i in topology.node_indices:
             perm = permutations[i]
-            # Get node bb.
-            t = topology.get_node_type(i)
-            #node_bb = node_bbs[t]
             node_bb = located_bbs[i]
             # Get target.
             target = topology.local_structure(i)
@@ -392,9 +369,7 @@ class Builder:
 
         info = {
             "topology": topology,
-            "node_bbs": node_bbs,
-            "edge_bbs": edge_bbs,
-            "custom_edge_bbs": custom_edge_bbs,
+            "bbs": bbs,
             "relax_obj": scaling_result.fun,
             "max_rmsd": np.max(rmsd_values),
             "mean_rmsd": np.mean(rmsd_values),
