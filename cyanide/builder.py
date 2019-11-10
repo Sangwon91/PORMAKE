@@ -10,6 +10,32 @@ from .local_structure import LocalStructure
 
 # bb: building block.
 class Builder:
+    def make_bbs_by_type(self, topology, node_bbs, edge_bbs):
+        """
+        Make bbs for Builder.build by node and edgy type.
+
+        Args:
+            node_bbs: dict of list like containing node building blocks.
+                The key is the type of node (integer).
+            edge_bbs: dict contrainig edge building blocks. The key is the
+                type of edge (tuple of two interges).
+        """
+        bbs = [None] * topology.n_all_points
+
+        for i in topology.node_indices:
+            t = topology.node_types[i]
+            bbs[i] = node_bbs[t]
+
+        for i in topology.edge_indices:
+            t = tuple(topology.edge_types[i])
+            bbs[i] = edge_bbs[t]
+
+        return bbs
+
+    def build_by_type(self, topology, node_bbs, edge_bbs):
+        bbs = self.make_bbs_by_type(topology, node_bbs, edge_bbs)
+        return self.build(topology, bbs)
+
     def build(self, topology, bbs):
         """
         The node_bbs must be given with proper order.
@@ -17,8 +43,8 @@ class Builder:
 
         Args:
             bbs: a list like obejct containing building blocks.
-                 bbs[i] contains a bb for node[i] if i in topology.node_indices
-                 or edge[i] if i in topology.edge_indices.
+                bbs[i] contains a bb for node[i] if i in topology.node_indices
+                or edge[i] if i in topology.edge_indices.
         """
         logger.debug("Builder.build starts.")
 
