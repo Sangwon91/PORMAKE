@@ -16,7 +16,7 @@ if tf.__version__[0] == "1":
     tf.compat.v1.enable_eager_execution()
     tf.compat.v1.enable_v2_behavior()
 
-from cyanide.utils import bound_values
+from .utils import bound_values
 
 class Scaler:
     """

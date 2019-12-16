@@ -32,11 +32,11 @@ class Builder:
 
         return bbs
 
-    def build_by_type(self, topology, node_bbs, edge_bbs):
+    def build_by_type(self, topology, node_bbs, edge_bbs, **kwargs):
         bbs = self.make_bbs_by_type(topology, node_bbs, edge_bbs)
-        return self.build(topology, bbs)
+        return self.build(topology, bbs, **kwargs)
 
-    def build(self, topology, bbs):
+    def build(self, topology, bbs, **kwargs):
         """
         The node_bbs must be given with proper order.
         Same as node type order in topology.
@@ -399,7 +399,12 @@ class Builder:
             "mean_rmsd": np.mean(rmsd_values),
         }
 
-        mof = MOF(mof_atoms, all_bonds, all_bond_types, info=info, wrap=True)
+        if "wrap" not in kwargs:
+            wrap = True
+        else:
+            wrap = kwargs["wrap"]
+
+        mof = MOF(mof_atoms, all_bonds, all_bond_types, info=info, wrap=wrap)
         logger.info("Construction of MOF done.")
 
         return mof
