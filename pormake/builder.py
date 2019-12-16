@@ -65,12 +65,10 @@ class Builder:
             # Calculate minimum RMSD of the slot.
             key = (t, node_bb.name)
             if slot_min_rmsd[key] < 0.0:
-                _, _, rmsd = locator.locate(target, node_bb, max_n_slices=6)
-                _, _, c_rmsd = \
-                    locator.locate(
-                        target, node_bb.make_chiral_building_block(),
-                        max_n_slices=6
-                    )
+                rmsd = locator.calculate_rmsd(target, node_bb)
+
+                chiral_node_bb = node_bb.make_chiral_building_block()
+                c_rmsd = locator.calculate_rmsd(target, chiral_node_bb)
                 slot_min_rmsd[key] = min(rmsd, c_rmsd)
                 logger.info(
                     "== Min RMSD of slot type %s: %.2E",

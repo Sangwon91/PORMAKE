@@ -122,3 +122,7 @@ class Locator:
         bb.atoms.set_positions(positions)
 
         return bb, rmsd_val
+
+    def calculate_rmsd(self, target, bb, max_n_slices=6):
+        _, _, rmsd_val = self.locate(target, bb, max_n_slices)
+        return rmsd_val
