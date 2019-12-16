@@ -1,11 +1,6 @@
 from .log import logger
 
 import os
-# Use CPUs only.
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-# Turn off meaningless warnings.
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = "2"
-logger.debug("GPUs are disabled for CPU calculation for tensorflow.")
 
 from itertools import permutations, product
 from collections import defaultdict
@@ -41,6 +36,38 @@ class Scaler:
         self.result = None
 
     def scale(self):
+        # Change global vars for Tensorflow.
+        os_keys = [
+            #"CUDA_VISIBLE_DEVICES",
+            "TF_CPP_MIN_LOG_LEVEL",
+        ]
+        old_envs = {}
+        for key in os_keys:
+            if key in os.environ:
+                old_envs[key] = os.environ[key]
+            else:
+                old_envs[key] = None
+        #os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+        os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+
+        #logger.debug(
+        #    "GPUs are disabled for CPU calculation for tensorflow.")
+
+        # Running autodiffs on CPU.
+        with tf.device("CPU:0"):
+            scaled_topology = self._scale()
+
+        # Restore original vars for Tensorflow.
+        for key in os_keys:
+            v = old_envs[key]
+            if v is None:
+                del os.environ[key]
+            else:
+                os.environ[key] = v
+
+        return scaled_topology
+
+    def _scale(self):
         """
         Scale topology using building block information.
         Both lengths and angles are optimized during the process.

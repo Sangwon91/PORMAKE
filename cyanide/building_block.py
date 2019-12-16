@@ -26,6 +26,7 @@ class BuildingBlock:
         self.connection_point_indices = np.array(self.atoms.info["cpi"])
         self._bonds = self.atoms.info["bonds"]
         self._bond_types = self.atoms.info["bond_types"]
+        self._has_metal = None
 
         self.check_bonds()
 
@@ -73,8 +74,20 @@ class BuildingBlock:
 
     @property
     def has_metal(self):
-        inter = set(self.atoms.symbols) & set(METAL_LIKE)
-        return len(inter) != 0
+        if self._has_metal is None:
+            inter = set(self.atoms.symbols) & set(METAL_LIKE)
+            return len(inter) != 0
+        else:
+            logger.debug("has_metal returns self._has_metal.")
+            return self._has_metal
+
+    @has_metal.setter
+    def has_metal(self, v):
+        if isinstance(v, bool) or (v is None):
+            logger.debug("New value is assigned for self._has_metal.")
+            self._has_metal = v
+        else:
+            raise Exception("Invalid value for has_metal.")
 
     @property
     def is_edge(self):
