@@ -17,6 +17,13 @@ from .neighbor_list import Neighbor, NeighborList
 class Topology:
     def __init__(self, cgd_file):
         self.atoms = read_cgd(filename=cgd_file)
+        self.update_properties()
+
+    def update_properties(self):
+        """
+        Calculate topology properties from information in self.atoms.
+        """
+
         # Save additional information.
         self.name = self.atoms.info["name"]
         self.spacegroup = self.atoms.info["spacegroup"]
@@ -464,3 +471,24 @@ class Topology:
                         format(label_i, label_j, distance, *image, bond_type)
                     )
 
+    def __mul__(self, m):
+        atoms = self.atoms.copy()
+
+        old_cn = atoms.info["cn"]
+        old_tags = atoms.get_tags()
+
+        n = len(atoms)
+
+        atoms = atoms * m
+
+        new_cn = [old_cn[i] for i in atoms.get_tags()]
+        new_tags = [old_tags[i] for i in atoms.get_tags()]
+
+        atoms.info["cn"] = new_cn
+        atoms.set_tags(new_tags)
+
+        new_topology = self.copy()
+        new_topology.atoms = atoms
+        new_topology.update_properties()
+
+        return new_topology
