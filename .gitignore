@@ -4,3 +4,6 @@ nodes
 edges
 topologies
 *.cif
+build
+dist
+*.egg-*
