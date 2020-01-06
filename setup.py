@@ -1,24 +1,18 @@
-from setuptools import setup
+from setuptools import setup, find_packages
+
+# Get dependencies from requirements.txt file.
+with open("requirements.txt", "w") as f:
+    install_requires = f.readlines()
 
 setup(
     name="pormake",
     version="0.0.1",
     description="Construction of nanoporous materials"
                 " from topology and building blocks.",
-    install_requires=[
-        "numpy",
-        "scipy",
-        "pymatgen",
-        "ase==3.18.0",
-        "tensorflow>=2.0.0",
-    ],
+    install_requires=install_requires
     author="Sangwon Lee",
     author_email="integratedmailsystem@gmail.com",
-    packages=[
-        "pormake",
-        "pormake.third_party",
-        "pormake.third_party.rmsd",
-        "pormake.third_party.rmsd.rmsd",
-    ],
+    packages=find_packages(include=["pormake", "rmsd"])
+    python_requires=">=3.5"
     zip_safe=False
 )

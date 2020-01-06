@@ -1,0 +1,5 @@
+numpy
+scipy
+pymatgen
+ase==3.18.0
+tensorflow>=1.15
