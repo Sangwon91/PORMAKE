@@ -12,7 +12,10 @@ setup(
     install_requires=install_requires,
     author="Sangwon Lee",
     author_email="integratedmailsystem@gmail.com",
-    packages=find_packages(include=["pormake", "rmsd"]),
+    packages=[
+        "pormake",
+        "pormake.third_party.rmsd",
+    ],
     python_requires=">=3.5",
     zip_safe=False
 )

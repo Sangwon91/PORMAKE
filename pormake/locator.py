@@ -3,7 +3,7 @@ import itertools
 import numpy as np
 
 from .log import logger
-from .third_party.rmsd import rmsd
+from .third_party import rmsd
 
 class Locator:
     def locate(self, target, bb, max_n_slices=4):
