@@ -3,7 +3,7 @@ from collections import defaultdict
 import numpy as np
 
 from .log import logger
-from .mof import MOF
+from .framework import Framework
 from .scaler import Scaler
 from .locator import Locator
 from .local_structure import LocalStructure
@@ -276,9 +276,9 @@ class Builder:
 
             logger.info(f"Edge {e}, RMSD: {rmsd:.2E}")
 
-        logger.info("Start finding bonds in generated MOF.")
+        logger.info("Start finding bonds in generated framework.")
         logger.info("Start finding bonds in building blocks.")
-        # Build bonds of generated MOF.
+        # Build bonds of generated framework.
         index_offsets = [None for _ in range(topology.n_all_points)]
         index_offsets[0] = 0
         for i, bb in enumerate(located_bbs[:-1]):
@@ -335,31 +335,31 @@ class Builder:
 
         bonds = np.array(bonds)
 
-        # All bonds in generated MOF.
+        # All bonds in generated framework.
         all_bonds = np.concatenate([bb_bonds, bonds], axis=0)
         all_bond_types = bb_bond_types + bond_types
 
-        logger.info("Start Making MOF instance.")
+        logger.info("Start making Framework instance.")
         # Make full atoms from located building blocks.
         bb_atoms_list = [v.atoms for v in located_bbs if v is not None]
 
         logger.debug("Merge list of atoms.")
-        mof_atoms = sum(bb_atoms_list[1:], bb_atoms_list[0])
+        framework_atoms = sum(bb_atoms_list[1:], bb_atoms_list[0])
         logger.debug("Set cell and boundary.")
-        mof_atoms.set_pbc(True)
-        mof_atoms.set_cell(topology.atoms.cell)
+        framework_atoms.set_pbc(True)
+        framework_atoms.set_cell(topology.atoms.cell)
 
-        # Remove connection points (X) from the MOF.
+        # Remove connection points (X) from the framework.
         count = 0
         new_indices = {}
-        for a in mof_atoms:
+        for a in framework_atoms:
             if a.symbol == "X":
                 continue
             new_indices[a.index] = count
             count += 1
 
         def is_X(i):
-            return mof_atoms[i].symbol == "X"
+            return framework_atoms[i].symbol == "X"
 
         XX_bonds = []
         new_bonds = []
@@ -389,7 +389,7 @@ class Builder:
         all_bonds = np.array(all_bonds)
         all_bond_types = new_bond_types
 
-        del mof_atoms[[a.symbol == "X" for a in mof_atoms]]
+        del framework_atoms[[a.symbol == "X" for a in framework_atoms]]
 
         info = {
             "topology": topology,
@@ -404,7 +404,13 @@ class Builder:
         else:
             wrap = kwargs["wrap"]
 
-        mof = MOF(mof_atoms, all_bonds, all_bond_types, info=info, wrap=wrap)
-        logger.info("Construction of MOF done.")
+        framework = Framework(
+            framework_atoms,
+            all_bonds,
+            all_bond_types,
+            info=info,
+            wrap=wrap
+        )
+        logger.info("Construction of framework done.")
 
-        return mof
+        return framework
