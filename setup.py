@@ -16,6 +16,9 @@ setup(
         "pormake",
         "pormake.third_party.rmsd",
     ],
+    package_data={
+        "pormake": ["database/**/*"],
+    },
     python_requires=">=3.5",
     zip_safe=False
 )
