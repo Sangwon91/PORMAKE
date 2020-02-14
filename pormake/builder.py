@@ -46,6 +46,13 @@ class Builder:
                 bbs[i] contains a bb for node[i] if i in topology.node_indices
                 or edge[i] if i in topology.edge_indices.
         """
+
+        # Parse keyword arguments.
+        if "accuracy" in kwargs:
+            max_n_slices = kwargs["accuracy"]
+        else:
+            max_n_slices = 6
+
         logger.debug("Builder.build starts.")
 
         # locator for bb locations.
@@ -65,7 +72,8 @@ class Builder:
             # Calculate minimum RMSD of the slot.
             key = (t, node_bb.name)
             if slot_min_rmsd[key] < 0.0:
-                rmsd = locator.calculate_rmsd(target, node_bb)
+                rmsd = locator.calculate_rmsd(
+                           target, node_bb, max_n_slices=max_n_slices)
 
                 chiral_node_bb = node_bb.make_chiral_building_block()
                 c_rmsd = locator.calculate_rmsd(target, chiral_node_bb)
@@ -86,11 +94,11 @@ class Builder:
             ratio = rmsd / slot_min_rmsd[key]
             if ratio > 1.01:
                 located_node, perm, rmsd = \
-                    locator.locate(target, node_bb, max_n_slices=6)
+                    locator.locate(target, node_bb, max_n_slices=max_n_slices)
                 logger.info(
                     "RMSD > MIN_RMSD*1.01, relocate Node %d"
                     " with high accuracy (%d), RMSD: %.2E",
-                    i, 6, rmsd
+                    i, max_n_slices, rmsd
                 )
 
             ratio = rmsd / slot_min_rmsd[key]
@@ -98,12 +106,12 @@ class Builder:
                 # Make chiral building block.
                 node_bb = node_bb.make_chiral_building_block()
                 located_node, perm, rmsd = \
-                    locator.locate(target, node_bb, max_n_slices=6)
+                    locator.locate(target, node_bb, max_n_slices=max_n_slices)
                 logger.info(
                     "RMSD > MIN_RMSD*1.01, relocate Node %d"
                     " with high accuracy (%d) and chiral building block"
                     ", RMSD: %.2E",
-                    i, 6, rmsd
+                    i, max_n_slices, rmsd
                 )
 
             # Critical error.
