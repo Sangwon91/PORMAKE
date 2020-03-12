@@ -20,13 +20,14 @@ from .utils import (
 from .local_structure import LocalStructure
 
 class BuildingBlock:
-    def __init__(self, bb_file):
+    def __init__(self, bb_file, local_structure_func=None):
         self.atoms = read_budiling_block_xyz(bb_file)
         self.name = self.atoms.info["name"]
         self.connection_point_indices = np.array(self.atoms.info["cpi"])
         self._bonds = self.atoms.info["bonds"]
         self._bond_types = self.atoms.info["bond_types"]
         self._has_metal = None
+        self.local_structure_func = local_structure_func
 
         self.check_bonds()
 
@@ -40,7 +41,11 @@ class BuildingBlock:
 
     def local_structure(self):
         connection_points = self.atoms[self.connection_point_indices].positions
-        return LocalStructure(connection_points, self.connection_point_indices)
+        return LocalStructure(
+                   connection_points,
+                   self.connection_point_indices,
+                   normalization_func=self.local_structure_func
+               )
 
     def set_centroid(self, centroid):
         """

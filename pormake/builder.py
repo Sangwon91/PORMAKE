@@ -10,6 +10,12 @@ from .local_structure import LocalStructure
 
 # bb: building block.
 class Builder:
+    def __init__(self, locator=None):
+        if locator is None:
+            self.locator = Locator()
+        else:
+            self.locator = locator
+
     def make_bbs_by_type(self, topology, node_bbs, edge_bbs):
         """
         Make bbs for Builder.build by node and edgy type.
@@ -56,7 +62,7 @@ class Builder:
         logger.debug("Builder.build starts.")
 
         # locator for bb locations.
-        locator = Locator()
+        locator = self.locator
 
         # Locate nodes and edges.
         located_bbs = [None for _ in range(topology.n_all_points)]

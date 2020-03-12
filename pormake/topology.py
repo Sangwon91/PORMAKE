@@ -15,9 +15,10 @@ from .neighbor_list import Neighbor, NeighborList
 
 
 class Topology:
-    def __init__(self, cgd_file):
+    def __init__(self, cgd_file, local_structure_func=None):
         self.atoms = read_cgd(filename=cgd_file)
         self.update_properties()
+        self.local_structure_func = local_structure_func
 
     def update_properties(self):
         """
@@ -127,7 +128,11 @@ class Topology:
             indices.append(n.index)
             positions.append(n.distance_vector)
 
-        return LocalStructure(positions, indices)
+        return LocalStructure(
+                   positions,
+                   indices,
+                   normalization_func=self.local_structure_func
+               )
 
     def get_node_type(self, i):
         return self._node_types[i]

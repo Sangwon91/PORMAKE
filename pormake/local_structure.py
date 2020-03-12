@@ -6,7 +6,7 @@ import ase.visualize
 from .utils import write_molecule_cif
 
 class LocalStructure:
-    def __init__(self, positions, indices):
+    def __init__(self, positions, indices, normalization_func=None):
         """
         Local structure of the given position.
         Indices is the indices in the original structure.
@@ -14,8 +14,12 @@ class LocalStructure:
         The center of local structure is zero vector.
         """
         # Normalize before using.
-        self.atoms = ase.Atoms(
-                         positions=self.normalize_positions(positions))
+        if normalization_func is not None:
+            positions = normalization_func(positions)
+        else:
+            positions = self.normalize_positions(positions)
+
+        self.atoms = ase.Atoms(positions=positions)
         self.indices = np.array(indices, dtype=np.int32)
 
     @property
