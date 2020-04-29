@@ -136,7 +136,7 @@ def read_cgd(filename, node_symbol="C", edge_center_symbol="O"):
     # Pymatget can handle : indicator in spacegroup.
     # Mark symmetrically equivalent sites.
     node_types = [i for i, _ in enumerate(node_positions)]
-    edge_types = [-1 for _ in edge_center_positions]
+    edge_types = [-(i+1) for i, _ in enumerate(edge_center_positions)]
     site_properties = {
         "type": node_types + edge_types,
         "cn": coordination_numbers + [2 for _ in edge_center_positions],
@@ -276,7 +276,7 @@ def write_molecule_cif(filename, atoms, bond_pairs, bond_types):
         f.write("loop_\n")
         f.write("_symmetry_equiv_pos_as_xyz\n")
         f.write("'x, y, z'\n")
-       
+
         # Calculate cell parameters.
         positions = atoms.get_positions()
         com = atoms.get_center_of_mass()
@@ -300,7 +300,7 @@ def write_molecule_cif(filename, atoms, bond_pairs, bond_types):
         f.write("_atom_site_fract_y\n")
         f.write("_atom_site_fract_z\n")
         f.write("_atom_type_partial_charge\n")
-       
+
         # Get fractional coordinates
         # fractional coordinate of C.O.M is (0.5, 0.5, 0.5).
         symbols = atoms.get_chemical_symbols()
@@ -319,7 +319,7 @@ def write_molecule_cif(filename, atoms, bond_pairs, bond_types):
         f.write("_geom_bond_distance\n")
         f.write("_geom_bond_site_symmetry_2\n")
         f.write("_ccdc_geom_bond_type\n")
-       
+
         for (i, j), t in zip(bond_pairs, bond_types):
             label_i = "{}{}".format(symbols[i], i)
             label_j = "{}{}".format(symbols[j], j)

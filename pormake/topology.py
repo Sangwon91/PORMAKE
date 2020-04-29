@@ -83,9 +83,9 @@ class Topology:
     def calculate_properties(self):
         # Build indices of nodes and edges.
         self._node_indices = \
-            np.argwhere(self.atoms.get_tags() != -1).reshape(-1)
+            np.argwhere(self.atoms.get_tags() >= 0).reshape(-1)
         self._edge_indices = \
-            np.argwhere(self.atoms.get_tags() == -1).reshape(-1)
+            np.argwhere(self.atoms.get_tags() < 0).reshape(-1)
 
         # Build node type.
         self._node_types = self.atoms.get_tags()
