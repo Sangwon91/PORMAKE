@@ -42,15 +42,22 @@ class Builder:
         bbs = self.make_bbs_by_type(topology, node_bbs, edge_bbs)
         return self.build(topology, bbs, **kwargs)
 
-    def build(self, topology, bbs, **kwargs):
+    def build(self, topology, bbs, permutations=None, **kwargs):
         """
         The node_bbs must be given with proper order.
         Same as node type order in topology.
 
         Args:
+            topology:
+
             bbs: a list like obejct containing building blocks.
                 bbs[i] contains a bb for node[i] if i in topology.node_indices
                 or edge[i] if i in topology.edge_indices.
+
+            permutations:
+
+        Return:
+            Framework object.
         """
 
         # Parse keyword arguments.
@@ -59,6 +66,10 @@ class Builder:
         else:
             max_n_slices = 6
 
+        # Empty dictionary.
+        if permutations is None:
+            permutations = {}
+
         logger.debug("Builder.build starts.")
 
         # locator for bb locations.
@@ -66,15 +77,42 @@ class Builder:
 
         # Locate nodes and edges.
         located_bbs = [None for _ in range(topology.n_all_points)]
-        permutations = [None for _ in range(topology.n_all_points)]
+
+        _permutations = [None for _ in range(topology.n_all_points)]
+        for i, perm in permutations.items():
+            _permutations[i] = np.array(perm)
+        permutations = _permutations
+
         slot_min_rmsd = defaultdict(lambda: -1.0)
         # Locate nodes.
         for i in topology.node_indices:
             # Get bb.
-            t = topology.get_node_type(i)
             node_bb = bbs[i]
             # Get target.
             target = topology.local_structure(i)
+
+            if permutations[i] is not None:
+                perm = permutations[i]
+
+                logger.info(
+                    "Use given permutation for node slot index %d"
+                    ", permutation: %s",
+                    i, perm
+                )
+
+                located_node, rmsd = \
+                    locator.locate_with_permutation(target, node_bb, perm)
+
+                logger.info(
+                    "Pre-location Node %d, RMSD: %.2E",
+                    i, rmsd,
+                )
+
+                located_bbs[i] = located_node
+
+                continue
+
+            t = topology.get_node_type(i)
             # Calculate minimum RMSD of the slot.
             key = (t, node_bb.name)
             if slot_min_rmsd[key] < 0.0:
@@ -145,6 +183,15 @@ class Builder:
             edge_bb = bbs[e]
 
             if edge_bb is None:
+                continue
+
+            if permutations[e] is not None:
+                logger.info(
+                    "Use given permutation for edge slot %d"
+                    ", permutation: %s",
+                    e, permutations[e]
+                )
+                located_bbs[e] = edge_bb
                 continue
 
             n1, n2 = topology.neighbor_list[e]
