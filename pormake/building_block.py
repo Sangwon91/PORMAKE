@@ -96,7 +96,7 @@ class BuildingBlock:
 
     @property
     def is_edge(self):
-        return self.n_connection_potins == 2
+        return self.n_connection_points == 2
 
     @property
     def is_node(self):
