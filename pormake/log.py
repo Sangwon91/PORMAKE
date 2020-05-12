@@ -10,8 +10,15 @@ logger.setLevel(logging.DEBUG)
 # Setting for the file logs.
 file_log_handler = logging.FileHandler(filename="runtime.log", mode="w")
 file_log_handler.setLevel(logging.DEBUG)
+
+_format = (
+    "[%(asctime)s %(levelname)s "
+    "%(filename)s:%(lineno)s - %(funcName)s()] "
+    "%(message)s"
+)
+
 formatter = logging.Formatter(
-    fmt="[%(asctime)s %(levelname)s %(filename)s:%(lineno)s] %(message)s",
+    fmt=_format,
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 file_log_handler.setFormatter(formatter)
