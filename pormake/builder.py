@@ -16,7 +16,7 @@ class Builder:
         else:
             self.locator = locator
 
-    def make_bbs_by_type(self, topology, node_bbs, edge_bbs):
+    def make_bbs_by_type(self, topology, node_bbs, edge_bbs=None):
         """
         Make bbs for Builder.build by node and edgy type.
 
@@ -30,15 +30,27 @@ class Builder:
 
         for i in topology.node_indices:
             t = topology.node_types[i]
-            bbs[i] = node_bbs[t]
+            bbs[i] = node_bbs[t].copy()
+
+        if edge_bbs is None:
+            # Empty dictionary.
+            edge_bbs = {}
+
+        # Log undefined edge building blocks.
+        for t in topology.unique_edge_types:
+            t = tuple(t)
+            if t not in edge_bbs:
+                logger.info(
+                    "No edge building block for type %s in edge_bbs.", t)
 
         for i in topology.edge_indices:
             t = tuple(topology.edge_types[i])
-            bbs[i] = edge_bbs[t]
+            if t in edge_bbs:
+                bbs[i] = edge_bbs[t].copy()
 
         return bbs
 
-    def build_by_type(self, topology, node_bbs, edge_bbs, **kwargs):
+    def build_by_type(self, topology, node_bbs, edge_bbs=None, **kwargs):
         bbs = self.make_bbs_by_type(topology, node_bbs, edge_bbs)
         return self.build(topology, bbs, **kwargs)
 
