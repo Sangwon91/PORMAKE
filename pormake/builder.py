@@ -116,7 +116,7 @@ class Builder:
                     locator.locate_with_permutation(target, node_bb, perm)
 
                 logger.info(
-                    "Pre-location Node %d, RMSD: %.2E",
+                    "Pre-location of node slot %d, RMSD: %.2E",
                     i, rmsd,
                 )
 
@@ -135,15 +135,17 @@ class Builder:
                 c_rmsd = locator.calculate_rmsd(target, chiral_node_bb)
                 slot_min_rmsd[key] = min(rmsd, c_rmsd)
                 logger.info(
-                    "== Min RMSD of slot type %s: %.2E",
-                    key, slot_min_rmsd[key]
+                    "== Min RMSD of (node type: %s, node bb: %s): %.2E",
+                    *key, slot_min_rmsd[key]
                 )
             # Only orientation.
             # Translations are applied after topology relexation.
             located_node, perm, rmsd = locator.locate(target, node_bb)
             logger.info(
-                "Pre-location Node %d, Type %s, RMSD: %.2E",
-                i, key, rmsd,
+                "Pre-location at node slot %d"
+                ", (node type: %s, node bb: %s)"
+                ", RMSD: %.2E",
+                i, *key, rmsd,
             )
             # If RMSD is different from min RMSD relocate with high accuracy.
             # 1% error.
@@ -243,7 +245,13 @@ class Builder:
             # Update.
             located_bbs[i] = located_node
 
-            logger.info(f"Node {i}, RMSD: {rmsd:.3E}")
+            t = topology.node_types[i]
+            logger.info(
+                "Location at node slot %d"
+                ", (node type: %s, node bb: %s)"
+                ", RMSD: %.2E",
+                i, t, node_bb.name, rmsd,
+            )
 
             rmsd_values.append(rmsd)
         rmsd_values = np.array(rmsd_values)
