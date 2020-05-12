@@ -347,7 +347,7 @@ class Builder:
             located_edge.set_centroid(centroid)
             located_bbs[e] = located_edge
 
-            logger.info(f"Edge {e}, RMSD: {rmsd:.2E}")
+            logger.debug(f"Edge {e}, RMSD: {rmsd:.2E}")
 
         logger.info("Start finding bonds in generated framework.")
         logger.info("Start finding bonds in building blocks.")
@@ -394,14 +394,14 @@ class Builder:
                 bonds.append((e1, a1))
                 bonds.append((e2, a2))
                 bond_types += ["S", "S"]
-                logger.info(
+                logger.debug(
                     "Bonds on topology edge %s are connected %s, %s.",
                     j, bonds[-2], bonds[-1],
                 )
             else:
                 bonds.append((a1, a2))
                 bond_types += ["S"]
-                logger.info(
+                logger.debug(
                     "Bonds on topology edge %s are connected %s.",
                     j, bonds[-1],
                 )

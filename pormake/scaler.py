@@ -236,7 +236,7 @@ class Scaler:
         max_len = np.max(lengths)
         min_len = np.min(lengths)
         ratio = max_len / min_len
-        logger.info("Max min ratio of edge length: %.3f", ratio)
+        logger.debug("Max min ratio of edge length: %.3f", ratio)
 
         # Normalize target dots. This enhances the optimization convegences.
         max_dot = np.mean(np.abs(target_dots))
@@ -326,23 +326,6 @@ class Scaler:
 
         # Save result.
         self.result = result
-
-        """
-        # Global optimization feature. Maybe used in future.
-        result = sp.optimize.basinhopping(
-                     x0=x0,
-                     func=fun,
-                     niter=100,
-                     T=1.0,
-                     stepsize=0.5,
-                     minimizer_kwargs={
-                         "jac": jac,
-                         "bounds": bounds,
-                         "method": "L-BFGS-B",
-                         #options={"maxiter": 500, "disp": False},
-                     },
-                 )
-        """
 
         n = topology.n_all_points
         # Get output x.
