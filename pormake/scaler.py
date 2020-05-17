@@ -74,7 +74,6 @@ class Scaler:
         """
         logger.debug("Scaler.scale starts.")
 
-        bond_length = 0.0
         # Aliases.
         topology = self.topology
 
@@ -143,9 +142,9 @@ class Scaler:
             len_j = bb.lengths[p][cj]
             vec_j = bb.connection_points[p][cj] - bb.centroid
 
-            edge_length = len_i + len_j + bond_length
+            edge_length = len_i + len_j
             if self.bbs[e] is not None:
-                edge_length += 2*self.bbs[e].lengths[0] + bond_length
+                edge_length += 2*self.bbs[e].lengths[0]
 
             # Rescaling.
             vec_i = vec_i / np.linalg.norm(vec_i) * edge_length
@@ -187,10 +186,7 @@ class Scaler:
                 ik_image.append(k_image)
 
                 if (j == k) and np.allclose(j_image, k_image):
-                    # Optimize edge lengths more importantly.
-                    # Self dot product = square of vector length (j == k).
-                    # np.allcolse neede because if should be same index with
-                    # same image (e.g, pcu can be problametic case).
+                    # To consider (j, k) and (k, j) duplication for j == k.
                     weights.append(2.0)
                 else:
                     weights.append(1.0)
