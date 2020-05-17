@@ -1,9 +1,24 @@
 import itertools
 
 import numpy as np
+import scipy
 
 from .log import logger
-from .third_party import rmsd
+
+
+def find_best_permutation(p, q):
+    dist = p[:, np.newaxis] - q[np.newaxis, :]
+    dist = np.linalg.norm(dist, axis=-1)
+
+    _, perm = scipy.optimize.linear_sum_assignment(dist)
+
+    return perm
+
+
+def find_best_orientation(p, q):
+    U, rmsd = scipy.spatial.transform.Rotation.align_vectors(p, q)
+    return U.as_matrix().T, rmsd
+
 
 class Locator:
     def locate(self, target, bb, max_n_slices=4):
@@ -18,10 +33,7 @@ class Locator:
         local1 = bb.local_structure()
 
         # p: target points, q: to be rotated points.
-        p_atoms = np.array(local0.atoms.symbols)
         p_coord = local0.atoms.positions
-
-        q_atoms = np.array(local1.atoms.symbols)
 
         # Serching best orientation over Euler angles.
         n_points = p_coord.shape[0]
@@ -49,16 +61,14 @@ class Locator:
 
             # Reorder coordinates.
             q_coord = atoms.positions
-            q_perm = rmsd.reorder_hungarian(
-                           p_atoms, q_atoms, p_coord, q_coord)
+            q_perm = find_best_permutation(p_coord, q_coord)
 
             # Use this permutation of the euler angle. But do not used the
             # Rotated atoms in order to get pure U.
             q_coord = local1.atoms.positions[q_perm]
 
             # Rotation matrix.
-            U = rmsd.kabsch(q_coord, p_coord)
-            rmsd_val = rmsd.kabsch_rmsd(p_coord, q_coord)
+            U, rmsd_val = find_best_orientation(p_coord, q_coord)
 
             # Save best U and Euler angle.
             if rmsd_val < min_rmsd_val:
@@ -106,8 +116,7 @@ class Locator:
         q_coord = q_coord[permutation]
 
         # Rotation matrix.
-        U = rmsd.kabsch(q_coord, p_coord)
-        rmsd_val = rmsd.kabsch_rmsd(p_coord, q_coord)
+        U, rmsd_val = find_best_orientation(p_coord, q_coord)
 
         bb = bb.copy()
 

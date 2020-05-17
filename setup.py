@@ -14,7 +14,6 @@ setup(
     author_email="integratedmailsystem@gmail.com",
     packages=[
         "pormake",
-        "pormake.third_party.rmsd",
     ],
     package_data={
         "pormake": ["database/**/*"],
