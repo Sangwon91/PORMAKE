@@ -46,6 +46,8 @@ class Builder:
         for i in topology.edge_indices:
             t = tuple(topology.edge_types[i])
             if t in edge_bbs:
+                if edge_bbs[t] is None:
+                    continue
                 bbs[i] = edge_bbs[t].copy()
 
         return bbs
