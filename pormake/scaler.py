@@ -22,7 +22,7 @@ class Scaler:
     """
     Scale topology using given nodes and edges building blocks information.
     """
-    def __init__(self, topology, bbs, perms, length_weight=1.0):
+    def __init__(self, length_weight=1.0):
         """
         Inputs:
             topology: topology
@@ -30,13 +30,9 @@ class Scaler:
                 topology.
             permutations
         """
-        self.topology = topology
-        self.bbs = bbs
-        self.perms = perms
         self.length_weight = length_weight
-        self.result = None
 
-    def scale(self):
+    def scale(self, topology, bbs, perms, return_result=False):
         # Change global vars for Tensorflow.
         os_keys = [
             #"CUDA_VISIBLE_DEVICES",
@@ -56,7 +52,7 @@ class Scaler:
 
         # Running autodiffs on CPU.
         with tf.device("CPU:0"):
-            scaled_topology = self._scale()
+            scaled_topology = self._scale(topology, bbs, perms, return_result)
 
         # Restore original vars for Tensorflow.
         for key in os_keys:
@@ -68,15 +64,12 @@ class Scaler:
 
         return scaled_topology
 
-    def _scale(self):
+    def _scale(self, topology, bbs, perms, return_result):
         """
         Scale topology using building block information.
         Both lengths and angles are optimized during the process.
         """
         logger.debug("Scaler.scale starts.")
-
-        # Aliases.
-        topology = self.topology
 
         # Get pairs of bond indices and images (periodic boundary) and
         pairs = []
@@ -133,19 +126,19 @@ class Scaler:
 
             # Get node bb length to the connection point.
             # cp: connection point.
-            bb = self.bbs[i]
-            p = self.perms[i]
+            bb = bbs[i]
+            p = perms[i]
             len_i = bb.lengths[p][ci]
             vec_i = bb.connection_points[p][ci] - bb.centroid
 
-            bb = self.bbs[j]
-            p = self.perms[j]
+            bb = bbs[j]
+            p = perms[j]
             len_j = bb.lengths[p][cj]
             vec_j = bb.connection_points[p][cj] - bb.centroid
 
             edge_length = len_i + len_j
-            if self.bbs[e] is not None:
-                edge_length += 2*self.bbs[e].lengths[0]
+            if bbs[e] is not None:
+                edge_length += 2*bbs[e].lengths[0]
 
             # Rescaling.
             vec_i = vec_i / np.linalg.norm(vec_i) * edge_length
@@ -321,9 +314,6 @@ class Scaler:
             options={"maxiter": 1000, "disp": False},
         )
 
-        # Save result.
-        self.result = result
-
         n = topology.n_slots
         # Get output x.
         x = result.x
@@ -405,4 +395,7 @@ class Scaler:
         scaled_topology.atoms.set_cell(c)
         scaled_topology.neighbor_list.set_data(new_data)
 
-        return scaled_topology
+        if return_result:
+            return scaled_topology, result
+        else:
+            return scaled_topology

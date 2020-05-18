@@ -10,11 +10,16 @@ from .local_structure import LocalStructure
 
 # bb: building block.
 class Builder:
-    def __init__(self, locator=None):
+    def __init__(self, locator=None, scaler=None):
         if locator is None:
             self.locator = Locator()
         else:
             self.locator = locator
+
+        if scaler is None:
+            self.scaler = Scaler()
+        else:
+            self.scaler = scaler
 
     def make_bbs_by_type(self, topology, node_bbs, edge_bbs=None):
         """
@@ -224,11 +229,14 @@ class Builder:
             permutations[e] = np.array(perm)
 
         # Scale topology.
-        scaler = Scaler(topology, located_bbs, permutations)
         # Change topology to scaled topology.
         original_topology = topology
-        topology = scaler.scale()
-        scaling_result = scaler.result
+        topology, scaling_result = self.scaler.scale(
+                                       topology=topology,
+                                       bbs=located_bbs,
+                                       perms=permutations,
+                                       return_result=True
+                                   )
 
         rmsd_values = []
         # Relocate and translate node building blocks.
