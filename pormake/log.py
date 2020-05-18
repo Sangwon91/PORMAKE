@@ -1,6 +1,6 @@
 import logging
 
-# Make a logger. Cyanide uses a single logger.
+# Make a logger. Pormake uses a single logger.
 logger = logging.getLogger("unique_logger")
 # To prevent colloisions with loggers in other libraries.
 logger.propagate = False
