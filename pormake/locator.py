@@ -16,8 +16,9 @@ def find_best_permutation(p, q):
 
 
 def find_best_orientation(p, q):
+    # This function gives root "sum" squared distance...
     U, rmsd = scipy.spatial.transform.Rotation.align_vectors(p, q)
-    return U.as_matrix().T, rmsd
+    return U.as_matrix().T, np.sqrt(np.square(rmsd)/len(p))
 
 
 class Locator:
