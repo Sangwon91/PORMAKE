@@ -91,7 +91,7 @@ class Topology:
         self._node_types = self.atoms.get_tags()
 
         # Build edge type.
-        self._edge_types = [(-1, -1) for _ in range(self.n_all_points)]
+        self._edge_types = [(-1, -1) for _ in range(self.n_slots)]
         for i in self.edge_indices:
             n = self.neighbor_list[i]
 

@@ -26,7 +26,7 @@ class Builder:
             edge_bbs: dict contrainig edge building blocks. The key is the
                 type of edge (tuple of two interges).
         """
-        bbs = [None] * topology.n_all_points
+        bbs = [None] * topology.n_slots
 
         for i in topology.node_indices:
             t = topology.node_types[i]
@@ -90,9 +90,9 @@ class Builder:
         locator = self.locator
 
         # Locate nodes and edges.
-        located_bbs = [None for _ in range(topology.n_all_points)]
+        located_bbs = [None for _ in range(topology.n_slots)]
 
-        _permutations = [None for _ in range(topology.n_all_points)]
+        _permutations = [None for _ in range(topology.n_slots)]
         for i, perm in permutations.items():
             _permutations[i] = np.array(perm)
         permutations = _permutations
@@ -362,7 +362,7 @@ class Builder:
         logger.info("Start finding bonds in generated framework.")
         logger.info("Start finding bonds in building blocks.")
         # Build bonds of generated framework.
-        index_offsets = [None for _ in range(topology.n_all_points)]
+        index_offsets = [None for _ in range(topology.n_slots)]
         index_offsets[0] = 0
         for i, bb in enumerate(located_bbs[:-1]):
             if bb is None:

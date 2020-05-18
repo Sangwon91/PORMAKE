@@ -247,7 +247,7 @@ class Scaler:
             External variables:
                 topology, pairs, image, ij, ik, ij_image, ik_image.
             """
-            n = topology.n_all_points
+            n = topology.n_slots
 
             # diff becames n x n x 3 tensor with element of
             # diff[i, j, :] = si - sj.
@@ -266,7 +266,7 @@ class Scaler:
 
         # Functions for scipy interface.
         def fun(x):
-            n = topology.n_all_points
+            n = topology.n_slots
 
             s = tf.reshape(x[:-9], [n, 3])
             c = tf.reshape(x[-9:], [3, 3])
@@ -276,7 +276,7 @@ class Scaler:
             return v.numpy()
 
         def jac(x):
-            n = topology.n_all_points
+            n = topology.n_slots
             x = tf.constant(x)
 
             # Use gradient tape for calculation of derivatives.
@@ -323,7 +323,7 @@ class Scaler:
         # Save result.
         self.result = result
 
-        n = topology.n_all_points
+        n = topology.n_slots
         # Get output x.
         x = result.x
         c = x[-9:].reshape(3, 3)
@@ -335,7 +335,7 @@ class Scaler:
         logger.info("OBJ: %.3f", result.fun)
 
         # Update neigbors list in topology.
-        new_data = [[] for _ in range(topology.n_all_points)]
+        new_data = [[] for _ in range(topology.n_slots)]
         # Rescaling cell to original scale.
         c *= np.sqrt(max_dot)
         # Transform to Cartesian coordinates.
