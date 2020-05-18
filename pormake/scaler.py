@@ -22,7 +22,7 @@ class Scaler:
     """
     Scale topology using given nodes and edges building blocks information.
     """
-    def __init__(self, topology, bbs, perms):
+    def __init__(self, topology, bbs, perms, length_weight=1.0):
         """
         Inputs:
             topology: topology
@@ -33,6 +33,7 @@ class Scaler:
         self.topology = topology
         self.bbs = bbs
         self.perms = perms
+        self.length_weight = length_weight
         self.result = None
 
     def scale(self):
@@ -186,8 +187,8 @@ class Scaler:
                 ik_image.append(k_image)
 
                 if (j == k) and np.allclose(j_image, k_image):
-                    # To consider (j, k) and (k, j) duplication for j == k.
-                    weights.append(2.0)
+                    # 2 for count collection for dot product of same edges.
+                    weights.append(2*self.length_weight)
                 else:
                     weights.append(1.0)
 
