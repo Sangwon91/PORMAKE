@@ -170,6 +170,10 @@ class Topology:
         return len(self.atoms)
 
     @property
+    def n_slots(self):
+        return self.n_all_points
+
+    @property
     def node_indices(self):
         return self._node_indices
 
