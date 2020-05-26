@@ -162,8 +162,8 @@ class Builder:
                     locator.locate(target, node_bb, max_n_slices=max_n_slices)
                 logger.info(
                     "RMSD > MIN_RMSD*1.01, relocate Node %d"
-                    " with high accuracy (%d), RMSD: %.2E",
-                    i, max_n_slices, rmsd
+                    " with %d trial orientations, RMSD: %.2E",
+                    i, max_n_slices**3, rmsd
                 )
 
             ratio = rmsd / slot_min_rmsd[key]
@@ -174,9 +174,9 @@ class Builder:
                     locator.locate(target, node_bb, max_n_slices=max_n_slices)
                 logger.info(
                     "RMSD > MIN_RMSD*1.01, relocate Node %d"
-                    " with high accuracy (%d) and chiral building block"
+                    " with %d trial orientations and chiral building block"
                     ", RMSD: %.2E",
-                    i, max_n_slices, rmsd
+                    i, max_n_slices**3, rmsd
                 )
 
             # Critical error.
@@ -484,7 +484,8 @@ class Builder:
 
         info = {
             "topology": topology,
-            "bbs": bbs,
+            "located_bbs": located_bbs,
+            "permutations": permutations,
             "relax_obj": scaling_result.fun,
             "max_rmsd": np.max(rmsd_values),
             "mean_rmsd": np.mean(rmsd_values),
