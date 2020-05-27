@@ -5,14 +5,20 @@ from .building_block import BuildingBlock
 from pathlib import Path
 
 class Database:
-    def __init__(self, db_path=None):
-        if db_path is None:
-            logger.debug("Default database is loaded.")
-            db_path = Path(__file__).parent / "database"
-        db_path = Path(db_path)
+    def __init__(self, topo_dir=None, bb_dir=None):
+        db_path = Path(__file__).parent / "database"
 
-        self.topo_dir = db_path / "topologies"
-        self.bb_dir = db_path / "bbs"
+        if topo_dir is None:
+            self.topo_dir = db_path / "topologies"
+            logger.debug("Default topology DB is loaded.")
+        else:
+            self.topo_dir = topo_dir
+
+        if bb_dir is None:
+            self.bb_dir = db_path / "bbs"
+            logger.debug("Default building block DB is loaded.")
+        else:
+            self.bb_dir = bb_dir
 
         if not self.topo_dir.exists():
             message = "%s does not exist." % self.topo_dir
