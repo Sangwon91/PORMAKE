@@ -160,8 +160,8 @@ class BuildingBlock:
         self._bonds = np.stack([I, J], axis=1)
         self._bond_types = ["S" for _ in self.bonds]
 
-    def view(self):
-        ase.visualize.view(self.atoms)
+    def view(self, *args, **kwargs):
+        ase.visualize.view(self.atoms, *args, **kwargs)
 
     def __repr__(self):
         msg = "BuildingBlock: {}, # of connection points: {}".format(

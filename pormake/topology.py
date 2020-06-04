@@ -205,7 +205,7 @@ class Topology:
         diff = n1.distance_vector - n2.distance_vector
         return np.linalg.norm(diff)
 
-    def view(self, show_edge_centers=True, repeat=1, **kwargs):
+    def view(self, show_edge_centers=True, *args, **kwargs):
         atoms = self.atoms.copy()
 
         if show_edge_centers:
@@ -223,11 +223,7 @@ class Topology:
         atoms.set_cell(atoms.cell*scale)
         atoms.set_positions(s @ atoms.cell)
 
-        # Visualize.
-        r = repeat
-        if isinstance(r, int):
-            r = (r, r, r)
-        ase.visualize.view(atoms, repeat=r, **kwargs)
+        ase.visualize.view(atoms, *args, **kwargs)
 
     def __repr__(self):
         msg = "Topology {}, (".format(self.name)
@@ -501,3 +497,6 @@ class Topology:
         new_topology.update_properties()
 
         return new_topology
+
+    def __rmul__(self, m):
+        return self * m

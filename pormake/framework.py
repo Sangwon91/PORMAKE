@@ -75,11 +75,11 @@ class Framework:
             info_str += "# Building blocks:\n"
             for i in _topology.node_indices:
                 t = _topology.node_types[i]
-                bb = self.info["bbs"][i]
+                bb = self.info["located_bbs"][i]
                 info_str += "#     Node {}, Type {}, {}\n".format(i, t, bb)
             for i in _topology.edge_indices:
                 t = tuple(_topology.edge_types[i])
-                bb = self.info["bbs"][i]
+                bb = self.info["located_bbs"][i]
                 info_str += "#     Edge {}, Type {}, {}\n".format(i, t, bb)
             f.write(info_str)
             f.write("# Relax obj value: {:.3f}\n"
@@ -169,5 +169,5 @@ class Framework:
                         format(label_i, label_j, distance, *image, bond_type)
                     )
 
-    def view(self):
-        ase.visualize.view(self.atoms)
+    def view(self, *args, **kwargs):
+        ase.visualize.view(self.atoms, *args, **kwargs)
