@@ -2,4 +2,4 @@ numpy
 scipy>=1.4.1
 pymatgen
 ase>=3.18.0
-tensorflow>=1.15
+tensorflow>=1.15|tensorflow-gpu>=1.15
