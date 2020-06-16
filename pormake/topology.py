@@ -533,14 +533,13 @@ class Topology:
         p("="*79)
         p("Topology %s" % self.name)
         p("Spacegroup: %s" % self.spacegroup)
-        p("")
+        p("-"*79)
 
         p("# of slots: %d (%d nodes, %d edges)"
           % (self.n_slots, self.n_nodes, self.n_edges)
         )
         p("# of node types: %d" % self.n_node_types)
         p("# of edge types: %d" % self.n_edge_types)
-        p("="*79)
         p("")
 
         p("-"*79)
@@ -553,7 +552,6 @@ class Topology:
             p("  slot indices: %s" % comma_numbers(split_indices[0]))
             for indices in split_indices[1:]:
                 p("                %s" % comma_numbers(indices))
-        p("-"*79)
         p("")
 
         p("-"*79)
@@ -568,7 +566,6 @@ class Topology:
             p("  slot indices: %s" % comma_numbers(split_indices[0]))
             for indices in split_indices[1:]:
                 p("                %s" % comma_numbers(indices))
-        p("-"*79)
 
         if symmetry_edge_type:
             p("")
@@ -584,7 +581,6 @@ class Topology:
                 p("  slot indices: %s" % comma_numbers(split_indices[0]))
                 for indices in split_indices[1:]:
                     p("                %s" % comma_numbers(indices))
-            p("-"*79)
 
         if slot_info:
             p("")
@@ -606,4 +602,5 @@ class Topology:
                       % (*self.edge_types[i], self.node_types[i],
                          adjacent_slot_indices)
                      )
-            p("-"*79)
+
+        p("="*79)
