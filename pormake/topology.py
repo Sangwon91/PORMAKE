@@ -506,3 +506,104 @@ class Topology:
 
     def __rmul__(self, m):
         return self * m
+
+    def describe(self,
+                 symmetry_edge_type=False,
+                 slot_info=False,
+                 file=sys.stdout):
+
+        def comma_numbers(nums):
+            return ", ".join([str(n) for n in nums])
+
+        def split_list(l, size):
+            out = []
+            inner = []
+            for e in l:
+                inner.append(e)
+                if len(inner) == size:
+                    out.append(inner)
+                    inner = []
+            if inner:
+                out.append(inner)
+            return out
+
+        # Alias for print function.
+        p = functools.partial(print, file=file)
+
+        p("="*79)
+        p("Topology %s" % self.name)
+        p("Spacegroup: %s" % self.spacegroup)
+        p("")
+
+        p("# of slots: %d (%d nodes, %d edges)"
+          % (self.n_slots, self.n_nodes, self.n_edges)
+        )
+        p("# of node types: %d" % self.n_node_types)
+        p("# of edge types: %d" % self.n_edge_types)
+        p("="*79)
+        p("")
+
+        p("-"*79)
+        p("Node type information")
+        p("-"*79)
+        for t, cn in zip(self.unique_node_types, self.unique_cn):
+            p("Node type: %d, CN: %d" % (t, cn))
+            indices = np.argwhere(self.node_types == t).reshape(-1).tolist()
+            split_indices = split_list(indices, 10)
+            p("  slot indices: %s" % comma_numbers(split_indices[0]))
+            for indices in split_indices[1:]:
+                p("                %s" % comma_numbers(indices))
+        p("-"*79)
+        p("")
+
+        p("-"*79)
+        p("Edge type information (adjacent node types) ")
+        p("-"*79)
+        for t in self.unique_edge_types:
+            p("Edge type: (%d, %d)" % (*t,))
+            condition = self.edge_types == t
+            condition = np.all(condition, axis=1)
+            indices = np.argwhere(condition).reshape(-1).tolist()
+            split_indices = split_list(indices, 10)
+            p("  slot indices: %s" % comma_numbers(split_indices[0]))
+            for indices in split_indices[1:]:
+                p("                %s" % comma_numbers(indices))
+        p("-"*79)
+
+        if symmetry_edge_type:
+            p("")
+            p("-"*79)
+            p("Edge type information (symmetry) ")
+            p("-"*79)
+            for t in np.unique(-self.node_types[self.edge_indices]):
+                t = -t
+                p("Edge type: %d" % t)
+                condition = self.node_types == t
+                indices = np.argwhere(condition).reshape(-1).tolist()
+                split_indices = split_list(indices, 10)
+                p("  slot indices: %s" % comma_numbers(split_indices[0]))
+                for indices in split_indices[1:]:
+                    p("                %s" % comma_numbers(indices))
+            p("-"*79)
+
+        if slot_info:
+            p("")
+            p("-"*79)
+            p("Slot information")
+            p("-"*79)
+            for i in range(self.n_slots):
+                p("[Slot %d]" % i, end=" ")
+                adjacent_slot_indices = comma_numbers(
+                    [n.index for n in self.neighbor_list[i]]
+                )
+                if i in self.node_indices:
+                    cn = self.cn[i]
+                    p("node type: %d, CN: %d, adjecent slot: %s"
+                      % (self.node_types[i], cn, adjacent_slot_indices)
+                     )
+                if i in self.edge_indices:
+                    p("edge type: (%d, %d) or %d, adjecent slot: %s"
+                      % (*self.edge_types[i], self.node_types[i],
+                         adjacent_slot_indices)
+                     )
+            p("-"*79)
