@@ -1,6 +1,8 @@
 import os
+import sys
 import copy
 import traceback
+import functools
 from pathlib import Path
 
 import numpy as np
@@ -109,8 +111,12 @@ class Topology:
         self._edge_types = np.array(self._edge_types)
 
         # Calculate the number of node and edge types.
-        self._n_node_types = np.unique(self.node_types).shape[0] - 1
-        self._n_edge_types = np.unique(self.edge_types, axis=0).shape[0] - 1
+        self._n_node_types = np.unique(
+            self.node_types[self.node_indices]
+        ).shape[0]
+        self._n_edge_types = np.unique(
+            self.edge_types[self.edge_indices], axis=0
+        ).shape[0]
 
         self.cn = np.array([len(n) for n in self.neighbor_list])
         self.cn = self.cn[self.node_indices]
