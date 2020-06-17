@@ -36,20 +36,20 @@ Import `pormake` .
 import pormake as pm
 ```
 
-Load `tbo` topology from default database.
+Load `tbo` topology from the default database.
 
 ```python
 database = pm.Database()
 tbo = database.get_topo("tbo")
 ```
 
-You can check the information via `.describe()` method.
+You can check the information using `.describe()` method.
 
 ```python
 tbo.describe()
 ```
 
-In this case, there are two node types (`0` and `1`) and one edge types (`(0, 1)`). `CN` in the node information indicates coordination number (number of adjacent nodes). 
+In this case, there are two node types (`0` and `1`) and one edge type (`(0, 1)`). `CN` in the node information indicates coordination number (number of adjacent nodes). 
 
 ```
 ===============================================================================
@@ -123,7 +123,7 @@ Next, make `Builder` instance.
 builder = pm.Builder()
 ```
 
-Make node type to building block dictionary. This dictionary is used for the construction. Building blocks have to be assigned to each node type (in this case, `0` and `1`).
+Make node type to building block dictionary. This dictionary is used for the construction of the MOF. Building blocks have to be assigned to each node type (in this case, `0` and `1`).
 
 ```python
 # N10 is assigned to node type 0 because the coordination number of node type 0 is 3.
@@ -156,9 +156,9 @@ HKUST1.write_cif("HKUST-1.cif")
 
 
 
-**2. Insert edge building block to HKUST-1**
+**2. Inserting edge building block to HKUST-1**
 
-From above example, we can insert edge building block in between `N409` and `N10`.
+From the above example, we can insert edge building blocks between `N409` and `N10`.
 
 Load long and thin edge building block from the database.
 
@@ -169,7 +169,7 @@ E41.view()
 
 <img src="doc/E41.png" width=400>
 
-Make edge type to building block dictionary. Edge type is the tuple of the types of adjacent nodes.
+Make edge type to building block dictionary. Edge type is a tuple of the types of adjacent nodes: (`0`, `1`).
 
 ```python
 edge_bbs = {(0, 1): E41}
