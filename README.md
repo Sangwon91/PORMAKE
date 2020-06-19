@@ -420,7 +420,8 @@ for bb in node_bbs.values():
 Check RMSD values.
 
 ```python
-for local, bb in zip(ith.unique_local_structures, node_bbs.values()):
+for key, bb in node_bbs.items():
+    local = ith.unique_local_structures[key]
     rmsd = locator.calculate_rmsd(local, bb)
     print("RMSD: %.2f" % rmsd)
 ```
