@@ -188,7 +188,7 @@ def read_cgd(filename, node_symbol="C", edge_center_symbol="O"):
 
         atoms.info["cn"] = cn
 
-        logger.warning(
+        logger.debug(
             "Overlapped positions are removed: index %s", set(J)
         )
 

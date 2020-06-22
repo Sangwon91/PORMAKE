@@ -2,6 +2,7 @@ from .log import logger
 from .topology import Topology
 from .building_block import BuildingBlock
 
+import pickle
 from pathlib import Path
 
 class Database:
@@ -52,18 +53,51 @@ class Database:
     def bb_list(self):
         return self._get_bb_list()
 
+    def serialize(self):
+        n_topos = len(self.topo_list)
+        for i, name in enumerate(self.topo_list):
+            cgd_path = self.topo_dir / (name+".cgd")
+            try:
+                topo = Topology(cgd_path)
+            except Exception as e:
+                pass
+                #message = "Topology loading is failed: %s." % e
+                #logger.error(message)
+                #raise Exception(message)
+
+            # Save pickle
+            pickle_path = self.topo_dir / (name+".pickle")
+            with pickle_path.open("wb") as f:
+                pickle.dump(topo, f)
+            logger.debug("Pickle %s saved" % pickle_path)
+
+            percent = i / n_topos * 100
+            print("\rProgress: %.1f %% (%d/%d)"
+                  % (percent, i, n_topos), end="")
+
     def get_topology(self, name):
         # Add .cgd to the topology name.
-        name = Path(name).stem + ".cgd"
-
-        path = self.topo_dir / name
-
+        pickle_path = self.topo_dir / (name+".pickle")
         try:
-            topo = Topology(path)
+            with pickle_path.open("rb") as f:
+                topo = pickle.load(f)
+            logger.debug("Topology is loaded from pickle.")
+            return topo
+        except:
+            logger.debug("No %s.pickle in DB. Try cgd format.", name)
+
+        cgd_path = self.topo_dir / (name+".cgd")
+        try:
+            topo = Topology(cgd_path)
         except Exception as e:
             message = "Topology loading is failed: %s." % e
             logger.error(message)
             raise Exception(message)
+
+        # Save pickle
+        with pickle_path.open("wb") as f:
+            pickle.dump(topo, f)
+        logger.debug("Pickle %s saved" % pickle_path)
 
         return topo
 
