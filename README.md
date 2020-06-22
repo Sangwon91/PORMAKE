@@ -241,3 +241,210 @@ MOF.view()
 ```
 
 <img src="doc/chimera.png" width=400>
+
+**4. Calculation of RMSD between node and building block**
+
+The root-mean-square deviation of atomic positions (RMSD) between node and building block can be used as a criterion for determining whether a particular building block can be located to a particular node.
+
+Load metal cluster of triangular prism shape.
+
+```python
+N198 = database.get_bb("N198")
+N198.view()
+```
+
+<img src="doc/N198.PNG" width=400>
+
+Load two test topologies: `pcu` and `acs`. `pcu` has nodes of octahedron shape and `acs` has nodes of triangular prism shape. Each topology has single node type (`0`).
+
+```python
+pcu = database.get_topo("pcu")
+pcu.describe()
+```
+
+```
+===============================================================================
+Topology pcu
+Spacegroup: Pm-3m
+-------------------------------------------------------------------------------
+# of slots: 4 (1 nodes, 3 edges)
+# of node types: 1
+# of edge types: 1
+
+-------------------------------------------------------------------------------
+Node type information
+-------------------------------------------------------------------------------
+Node type: 0, CN: 6
+  slot indices: 0
+
+-------------------------------------------------------------------------------
+Edge type information (adjacent node types) 
+-------------------------------------------------------------------------------
+Edge type: (0, 0)
+  slot indices: 1, 2, 3
+===============================================================================
+```
+
+
+
+```python
+acs = database.get_topo("acs")
+acs.describe()
+```
+
+```
+===============================================================================
+Topology acs
+Spacegroup: P63/mmc
+-------------------------------------------------------------------------------
+# of slots: 8 (2 nodes, 6 edges)
+# of node types: 1
+# of edge types: 1
+
+-------------------------------------------------------------------------------
+Node type information
+-------------------------------------------------------------------------------
+Node type: 0, CN: 6
+  slot indices: 0, 1
+
+-------------------------------------------------------------------------------
+Edge type information (adjacent node types) 
+-------------------------------------------------------------------------------
+Edge type: (0, 0)
+  slot indices: 2, 3, 4, 5, 6, 7
+===============================================================================
+```
+
+You can check the shape of node via `LocalStructure` object.
+
+```python
+# 0 is the type of node.
+# Octahedron shape.
+pcu_local_0 = pcu.unique_local_structures[0]
+pcu_local_0.view()
+```
+
+<img src="doc/oct.png" width=350> <img src="doc/oct_2.png" width=350>
+
+```python
+# 0 is the type of node.
+# Triangular prism shape.
+acs_local_0 = acs.unique_local_structures[0]
+acs_local_0.view()
+```
+
+<img src="doc/tri.png" width=350> <img src="doc/tri_2.png" width=350>
+
+Make `Locator` instance.
+
+```python
+locator = pm.Locator()
+```
+
+Calculate RMSD values using the `locator`. As expected, you can see that the RMSD value of the `pcu` (0.42) is bigger than that of `acs` (0.02).
+
+```python
+acs_rmsd_0 = locator.calculate_rmsd(acs_local_0, N198)
+print("RMSD at acs node type 0: %.2f" % acs_rmsd_0)
+```
+
+```
+RMSD at acs node type 0: 0.02
+```
+
+
+
+```python
+pcu_rmsd_0 = locator.calculate_rmsd(pcu_local_0, N198)
+print("RMSD at pcu node type 0: %.2f" % pcu_rmsd_0)
+```
+
+```
+RMSD at pcu node type 0: 0.42
+```
+
+In general, `RMSD < 0.3`  is good threshold for the MOF constructions. 
+
+
+
+**5. Simple example of MOF construction using low-symmetry building blocks**
+
+Load `ith` topology.
+
+```python
+ith = database.get_topo("ith")
+ith.describe()
+```
+
+```
+===============================================================================
+Topology ith
+Spacegroup: Pm-3n
+-------------------------------------------------------------------------------
+# of slots: 32 (8 nodes, 24 edges)
+# of node types: 2
+# of edge types: 1
+
+-------------------------------------------------------------------------------
+Node type information
+-------------------------------------------------------------------------------
+Node type: 0, CN: 4
+  slot indices: 0, 1, 2, 3, 4, 5
+Node type: 1, CN: 12
+  slot indices: 6, 7
+
+-------------------------------------------------------------------------------
+Edge type information (adjacent node types) 
+-------------------------------------------------------------------------------
+Edge type: (0, 1)
+  slot indices: 8, 9, 10, 11, 12, 13, 14, 15, 16, 17
+                18, 19, 20, 21, 22, 23, 24, 25, 26, 27
+                28, 29, 30, 31
+===============================================================================
+```
+
+Load and visualize node building blocks. `N114` is the building block of low-symmetry.
+
+```python
+node_bbs = {
+    0: database.get_bb("N3"),
+    1: database.get_bb("N114"),
+}
+
+for bb in node_bbs.values():
+    bb.view()
+```
+
+<img src="doc/N3.png" width=350> <img src="doc/N114.png" width=350>
+
+Check RMSD values.
+
+```python
+for key, bb in node_bbs.items():
+    local = ith.unique_local_structures[key]
+    rmsd = locator.calculate_rmsd(local, bb)
+    print("RMSD: %.2f" % rmsd)
+```
+
+```
+RMSD: 0.16
+RMSD: 0.27
+```
+
+Load edge building block.
+
+```python
+edge_bbs = {(0, 1): database.get_bb("E41")}
+edge_bbs[(0, 1)].view()
+```
+
+<img src="doc/E41.png" width=400>
+
+Make MOF.
+
+```python
+MOF = builder.build_by_type(topology=ith, node_bbs=node_bbs, edge_bbs=edge_bbs)
+MOF.view()
+```
+
+<img src="doc/LS_MOF.png" width=350> <img src="doc/LS_MOF_2.png" width=350>
