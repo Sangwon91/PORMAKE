@@ -488,15 +488,14 @@ class Topology:
         old_cn = atoms.info["cn"]
         old_tags = atoms.get_tags()
 
+        tag2cn = {tag: cn for tag, cn in zip(old_tags, old_cn)}
+
         n = len(atoms)
 
         atoms = atoms * m
 
-        new_cn = [old_cn[i] for i in atoms.get_tags()]
-        new_tags = [old_tags[i] for i in atoms.get_tags()]
-
+        new_cn = [tag2cn[i] for i in atoms.get_tags()]
         atoms.info["cn"] = new_cn
-        atoms.set_tags(new_tags)
 
         new_topology = self.copy()
         new_topology.atoms = atoms
