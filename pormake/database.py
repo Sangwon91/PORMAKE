@@ -54,16 +54,14 @@ class Database:
         return self._get_bb_list()
 
     def serialize(self):
+        print("Database serialization starts.")
         n_topos = len(self.topo_list)
-        for i, name in enumerate(self.topo_list):
+        for i, name in enumerate(self.topo_list, start=1):
             cgd_path = self.topo_dir / (name+".cgd")
             try:
                 topo = Topology(cgd_path)
             except Exception as e:
-                pass
-                #message = "Topology loading is failed: %s." % e
-                #logger.error(message)
-                #raise Exception(message)
+                continue
 
             # Save pickle
             pickle_path = self.topo_dir / (name+".pickle")
