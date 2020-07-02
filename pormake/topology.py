@@ -118,8 +118,9 @@ class Topology:
             self.edge_types[self.edge_indices], axis=0
         ).shape[0]
 
-        self.cn = np.array([len(n) for n in self.neighbor_list])
-        self.cn = self.cn[self.node_indices]
+        #self.cn = np.array([len(n) for n in self.neighbor_list])
+        #self.cn = self.cn[self.node_indices]
+        self.cn = self.atoms.info["cn"]
         self.unique_cn = []
         types = np.unique(self.node_types[self.node_indices])
         for t in types:
