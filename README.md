@@ -7,11 +7,13 @@
 * Dependencies
 
 ```
-numpy
-scipy>=1.4.1
+python>=3.7
+```
+
+```
+tensorflow>=1.15|tensorflow-gpu>=1.15
 pymatgen
 ase>=3.18.0
-tensorflow>=1.15|tensorflow-gpu>=1.15
 ```
 
 1. Install all dependencies.
