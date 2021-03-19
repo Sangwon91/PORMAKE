@@ -6,7 +6,7 @@ with open("requirements.txt", "r") as f:
 
 setup(
     name="pormake",
-    version="0.0.1",
+    version="0.0.2",
     description="Construction of nanoporous materials"
                 " from topology and building blocks.",
     install_requires=install_requires,
@@ -18,6 +18,6 @@ setup(
     package_data={
         "pormake": ["database/**/*"],
     },
-    python_requires=">=3.5",
+    python_requires=">=3.7",
     zip_safe=False
 )

@@ -11,7 +11,8 @@ try:
 except Exception as e:
     from ase.neighborlist import natural_cutoffs
 
-import pymatgen as mg
+
+import pymatgen.core as mg
 
 from .log import logger
 
