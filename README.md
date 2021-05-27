@@ -12,7 +12,7 @@ python>=3.7
 
 ```
 tensorflow>=1.15|tensorflow-gpu>=1.15
-pymatgen
+pymatgen<2020
 ase>=3.18.0
 ```
 
