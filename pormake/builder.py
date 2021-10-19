@@ -182,7 +182,7 @@ class Builder:
             # Critical error.
             if (ratio < 0.99) and (slot_min_rmsd[key] > 1e-3):
                 message = (
-                    "MIN_RMSD is not collect. "
+                    "MIN_RMSD is not correct. "
                     "Topology: %s; "
                     "Slot: %s; "
                     "Building block: %s; "
