@@ -2,6 +2,8 @@
 **Por**ous materials **Make**r
 
 > Python library for the construction of porous materials using topology and building blocks.
+> 
+> Please cite [me](https://pubs.acs.org/doi/abs/10.1021/acsami.1c02471) if you find it useful!
 
 ## Installation
 * Dependencies
