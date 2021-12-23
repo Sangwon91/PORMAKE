@@ -5,3 +5,5 @@ dist
 *.egg-*
 test*
 *.log
+*.pickle
+examples

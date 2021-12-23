@@ -13,7 +13,7 @@ python>=3.7
 ```
 
 ```
-tensorflow>=1.15|tensorflow-gpu>=1.15
+jax[cpu]
 pymatgen<2022
 ase>=3.18.0
 ```

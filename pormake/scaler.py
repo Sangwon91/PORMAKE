@@ -9,12 +9,8 @@ import numpy as np
 import scipy as sp
 import scipy.optimize
 
-# For automatic differentiation.
-import tensorflow as tf
-if tf.__version__[0] == "1":
-    logger.debug("Tensorflow v1 detected. Enable v2 behavior.")
-    tf.compat.v1.enable_eager_execution()
-    tf.compat.v1.enable_v2_behavior()
+import jax
+import jax.numpy as jnp
 
 from .utils import bound_values
 
@@ -33,38 +29,6 @@ class Scaler:
         self.length_weight = length_weight
 
     def scale(self, topology, bbs, perms, return_result=False):
-        # Change global vars for Tensorflow.
-        os_keys = [
-            #"CUDA_VISIBLE_DEVICES",
-            "TF_CPP_MIN_LOG_LEVEL",
-        ]
-        old_envs = {}
-        for key in os_keys:
-            if key in os.environ:
-                old_envs[key] = os.environ[key]
-            else:
-                old_envs[key] = None
-        #os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-        os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
-
-        #logger.debug(
-        #    "GPUs are disabled for CPU calculation for tensorflow.")
-
-        # Running autodiffs on CPU.
-        with tf.device("CPU:0"):
-            scaled_topology = self._scale(topology, bbs, perms, return_result)
-
-        # Restore original vars for Tensorflow.
-        for key in os_keys:
-            v = old_envs[key]
-            if v is None:
-                del os.environ[key]
-            else:
-                os.environ[key] = v
-
-        return scaled_topology
-
-    def _scale(self, topology, bbs, perms, return_result):
         """
         Scale topology using building block information.
         Both lengths and angles are optimized during the process.
@@ -245,46 +209,34 @@ class Scaler:
 
             # diff becames n x n x 3 tensor with element of
             # diff[i, j, :] = si - sj.
-            diff = s[tf.newaxis, :, :] - s[:, tf.newaxis, :]
+            diff = s[jnp.newaxis, :, :] - s[:, jnp.newaxis, :]
 
-            ij_vecs = (tf.gather_nd(diff, ij) + ij_image) @ c
-            ik_vecs = (tf.gather_nd(diff, ik) + ik_image) @ c
+            ij_vecs = (diff[ij[:, 0], ij[:, 1], :] + ij_image) @ c
+            ik_vecs = (diff[ik[:, 0], ik[:, 1], :] + ik_image) @ c
 
-            dots = tf.reduce_sum(ij_vecs * ik_vecs, axis=-1)
+            dots = jnp.sum(ij_vecs * ik_vecs, axis=-1)
 
             return dots
 
         def objective(s, c):
             dots = calc_dots(s, c)
-            return tf.reduce_mean(tf.square(dots-target_dots) * weights)
+            return jnp.mean(jnp.square(dots-target_dots) * weights)
 
         # Functions for scipy interface.
         def fun(x):
             n = topology.n_slots
 
-            s = tf.reshape(x[:-9], [n, 3])
-            c = tf.reshape(x[-9:], [3, 3])
+            s = jnp.reshape(x[:-9], (n, 3))
+            c = jnp.reshape(x[-9:], (3, 3))
 
             v = objective(s, c)
 
-            return v.numpy()
+            return v
 
-        def jac(x):
-            n = topology.n_slots
-            x = tf.constant(x)
+        jac = jax.jit(jax.grad(fun))
 
-            # Use gradient tape for calculation of derivatives.
-            with tf.GradientTape() as tape:
-                tape.watch(x)
-
-                s = tf.reshape(x[:-9], [n, 3])
-                c = tf.reshape(x[-9:], [3, 3])
-
-                v = objective(s, c)
-
-            dx = tape.gradient(v, x)
-
-            return dx.numpy()
+        fun_numpy = lambda x: np.array(fun(x), dtype=np.float64)
+        jac_numpy = lambda x: np.array(jac(x), dtype=np.float64)
 
         # Prepare geometry optimization.
         # Make initial value.
@@ -307,8 +259,8 @@ class Scaler:
         # Perform optimization.
         result = sp.optimize.minimize(
             x0=x0,
-            fun=fun,
-            jac=jac,
+            fun=fun_numpy,
+            jac=jac_numpy,
             method="L-BFGS-B",
             bounds=bounds,
             options={"maxiter": 1000, "disp": False},
