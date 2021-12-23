@@ -20,6 +20,7 @@ ase>=3.18.0
 
 1. Install all dependencies.
 
+**Warning: on Windows system, you have to install `jax` and `pymatgen` manually.**
 ```bash
 $ pip install -r requirements.txt
 ```
