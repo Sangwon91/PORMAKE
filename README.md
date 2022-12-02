@@ -33,7 +33,7 @@ $ python setup.py install
 
 ## Examples
 
-**1. Construction of HKUST-1**
+### 1. Construction of HKUST-1
 
 Import `pormake` .
 
@@ -161,7 +161,7 @@ HKUST1.write_cif("HKUST-1.cif")
 
 
 
-**2. Inserting edge building block to HKUST-1**
+### 2. Inserting edge building block to HKUST-1
 
 From the above example, we can insert edge building blocks between `N409` and `N10`.
 
@@ -198,7 +198,7 @@ MOF.view()
 
 
 
-**3. Construction of *Chimera* MOF**
+### 3. Construction of *Chimera* MOF
 
 `pormake` can assign different building block to each slot. In this example, we will replace some of `N409` to porphyrin.
 
@@ -247,7 +247,7 @@ MOF.view()
 
 <img src="doc/chimera.png" width=400>
 
-**4. Calculation of RMSD between node and building block**
+### 4. Calculation of RMSD between node and building block
 
 The root-mean-square deviation of atomic positions (RMSD) between node and building block can be used as a criterion for determining whether a particular building block can be located to a particular node.
 
@@ -372,7 +372,7 @@ In general, `RMSD < 0.3`  is good threshold for the MOF constructions.
 
 
 
-**5. Simple example of MOF construction using low-symmetry building blocks**
+### 5. Simple example of MOF construction using low-symmetry building blocks
 
 Load `ith` topology.
 
@@ -454,7 +454,7 @@ MOF.view()
 
 <img src="doc/LS_MOF.png" width=350> <img src="doc/LS_MOF_2.png" width=350>
 
-**6. Custom building block**
+### 6. Custom building block
 
 PORMAKE can read building blocks from xyz file. In xyz file, all connection points are denoted as symbol `X`.
 
