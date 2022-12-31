@@ -7,8 +7,8 @@ license = "MIT"
 readme = "README.md"
 repository = "https://github.com/Sangwon91/PORMAKE"
 classifiers = [
-    "Programming Language :: Python :: 3.8"
-    "Programming Language :: Python :: 3.9"
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10"
 ]
 packages = [
