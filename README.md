@@ -18,12 +18,12 @@ pip install pormake
 
 ### 2. From source
 
-#### 1. Directly install from Github repository.
+#### 1. Directly install from Github repository
 ```
 pip install git+https://github.com/Sangwon91/PORMAKE.git
 ```
 
-#### 2. Editable installtion.
+#### 2. Editable installtion
 ```
 git clone https://github.com/Sangwon91/PORMAKE.git
 pip install -e PORMAKE
