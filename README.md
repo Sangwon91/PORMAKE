@@ -26,7 +26,7 @@ pip install git+https://github.com/Sangwon91/PORMAKE.git
 #### 2. Editable installtion.
 ```
 git clone https://github.com/Sangwon91/PORMAKE.git
-pip install -e .
+pip install -e PORMAKE
 ```
 
 ## Examples
