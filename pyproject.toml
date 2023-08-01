@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pormake"
-version = "0.1.0"
+version = "0.1.1"
 description = "Python library for the construction of porous materials using topology and building blocks"
 authors = ["Sangwon Lee <lsw91.main@gmail.com>"]
 license = "MIT"
@@ -26,6 +26,7 @@ jax = {extras = ["cpu"], version = "^0.4.1"}
 ipykernel = "^6.19.4"
 ipywidgets = "^7.6.0"
 nglview = "^3.0.3"
+pre-commit = "^3.3.3"
 
 [build-system]
 requires = ["poetry-core"]
