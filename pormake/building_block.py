@@ -1,23 +1,22 @@
 import copy
 
-import numpy as np
-
 import ase
 import ase.visualize
+import numpy as np
 
 try:
     from ase.utils import natural_cutoffs
-except Exception as e:
+except Exception:
     from ase.neighborlist import natural_cutoffs
 
-from .log import logger
-from .utils import (
-    read_budiling_block_xyz,
-    covalent_neighbor_list,
-    write_molecule_cif,
-    METAL_LIKE,
-)
 from .local_structure import LocalStructure
+from .log import logger
+from .utils import (  # covalent_neighbor_list,
+    METAL_LIKE,
+    read_budiling_block_xyz,
+    write_molecule_cif,
+)
+
 
 class BuildingBlock:
     def __init__(self, bb_file, local_structure_func=None):
@@ -42,10 +41,10 @@ class BuildingBlock:
     def local_structure(self):
         connection_points = self.atoms[self.connection_point_indices].positions
         return LocalStructure(
-                   connection_points,
-                   self.connection_point_indices,
-                   normalization_func=self.local_structure_func
-               )
+            connection_points,
+            self.connection_point_indices,
+            normalization_func=self.local_structure_func,
+        )
 
     def set_centroid(self, centroid):
         """
@@ -126,7 +125,7 @@ class BuildingBlock:
 
         # Check whether all atoms has bond or not.
         indices = set(np.array(self._bonds).reshape(-1))
-        #X_indices = set([a.index for a in self.atoms if a.symbol == "X"])
+        # X_indices = set([a.index for a in self.atoms if a.symbol == "X"])
         atom_indices = set([a.index for a in self.atoms])
 
         sub = list(atom_indices - indices)
@@ -134,15 +133,17 @@ class BuildingBlock:
         if len(sub) != 0:
             pair = [(i, self.atoms.symbols[i]) for i in sub]
             logger.warning(
-                "There are atoms without bond: %s, %s.", self.name, pair,
+                "There are atoms without bond: %s, %s.",
+                self.name,
+                pair,
             )
-            #logger.warning("Make new bond for X.")
+            # logger.warning("Make new bond for X.")
 
     def calculate_bonds(self):
         logger.debug("Start calculating bonds.")
 
         r = self.atoms.positions
-        c = 1.2*np.array(natural_cutoffs(self.atoms))
+        c = 1.2 * np.array(natural_cutoffs(self.atoms))
 
         diff = r[np.newaxis, :, :] - r[:, np.newaxis, :]
         norms = np.linalg.norm(diff, axis=-1)

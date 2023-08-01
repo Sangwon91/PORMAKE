@@ -1,7 +1,6 @@
 # %%
 import pormake as pm
 
-
 database = pm.Database()
 
 tbo = database.get_topo("tbo")
@@ -18,10 +17,7 @@ N10.view()
 # %%
 builder = pm.Builder()
 
-node_bbs = {
-    0: N10,
-    1: N409
-}
+node_bbs = {0: N10, 1: N409}
 
 HKUST1 = builder.build_by_type(topology=tbo, node_bbs=node_bbs)
 HKUST1.view()

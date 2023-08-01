@@ -1,16 +1,15 @@
 from pathlib import Path
 
-import numpy as np
-
 import ase
 import ase.io
 import ase.neighborlist
+import numpy as np
 
 try:
     from ase.utils import natural_cutoffs
 except Exception as e:
+    e
     from ase.neighborlist import natural_cutoffs
-
 
 import pymatgen.core as mg
 
@@ -18,23 +17,91 @@ from .log import logger
 
 # Metal species.
 METAL_LIKE = [
-    "Li", "Be", "B", "Na", "Mg",
-    "Al", "Si", "K", "Ca", "Sc",
-    "Ti", "V", "Cr", "Mn", "Fe",
-    "Co", "Ni", "Cu", "Zn", "Ga",
-    "Ge", "As", "Rb", "Sr", "Y",
-    "Zr", "Nb", "Mo", "Tc", "Ru",
-    "Rh", "Pd", "Ag", "Cd", "In",
-    "Sn", "Sb", "Te", "Cs", "Ba",
-    "La", "Ce", "Pr", "Nd", "Pm",
-    "Sm", "Eu", "Gd", "Tb", "Dy",
-    "Ho", "Er", "Tm", "Yb", "Lu",
-    "Hf", "Ta", "W", "Re", "Os",
-    "Ir", "Pt", "Au", "Hg", "Tl",
-    "Pb", "Bi", "Po", "Fr", "Ra",
-    "Ac", "Th", "Pa", "U", "Np",
-    "Pu", "Am", "Cm", "Bk", "Cf",
-    "Es", "Fm", "Md", "No", "Lr",
+    "Li",
+    "Be",
+    "B",
+    "Na",
+    "Mg",
+    "Al",
+    "Si",
+    "K",
+    "Ca",
+    "Sc",
+    "Ti",
+    "V",
+    "Cr",
+    "Mn",
+    "Fe",
+    "Co",
+    "Ni",
+    "Cu",
+    "Zn",
+    "Ga",
+    "Ge",
+    "As",
+    "Rb",
+    "Sr",
+    "Y",
+    "Zr",
+    "Nb",
+    "Mo",
+    "Tc",
+    "Ru",
+    "Rh",
+    "Pd",
+    "Ag",
+    "Cd",
+    "In",
+    "Sn",
+    "Sb",
+    "Te",
+    "Cs",
+    "Ba",
+    "La",
+    "Ce",
+    "Pr",
+    "Nd",
+    "Pm",
+    "Sm",
+    "Eu",
+    "Gd",
+    "Tb",
+    "Dy",
+    "Ho",
+    "Er",
+    "Tm",
+    "Yb",
+    "Lu",
+    "Hf",
+    "Ta",
+    "W",
+    "Re",
+    "Os",
+    "Ir",
+    "Pt",
+    "Au",
+    "Hg",
+    "Tl",
+    "Pb",
+    "Bi",
+    "Po",
+    "Fr",
+    "Ra",
+    "Ac",
+    "Th",
+    "Pa",
+    "U",
+    "Np",
+    "Pu",
+    "Am",
+    "Cm",
+    "Bk",
+    "Cf",
+    "Es",
+    "Fm",
+    "Md",
+    "No",
+    "Lr",
 ]
 
 
@@ -42,23 +109,23 @@ def bound_values(x, eps=1e-4):
     """
     Add description.
     """
-    x = np.where(np.abs(x-0) < eps, np.full_like(x, 0+eps), x)
-    x = np.where(np.abs(x-1) < eps, np.full_like(x, 1-eps), x)
+    x = np.where(np.abs(x - 0) < eps, np.full_like(x, 0 + eps), x)
+    x = np.where(np.abs(x - 1) < eps, np.full_like(x, 1 - eps), x)
 
     return x
 
 
 def covalent_neighbor_list(
-        atoms, scale=1.2, neglected_species=[], neglected_indices=[]):
-
+    atoms, scale=1.2, neglected_species=[], neglected_indices=[]
+):
     cutoffs = natural_cutoffs(atoms)
-    cutoffs = [scale*c for c in cutoffs]
+    cutoffs = [scale * c for c in cutoffs]
     # Remove radii to neglect them.
     species_indices = [
         i for i, a in enumerate(atoms) if a.symbol in neglected_species
     ]
 
-    for i in neglected_indices+species_indices:
+    for i in neglected_indices + species_indices:
         cutoffs[i] = 0.0
 
     return ase.neighborlist.neighbor_list("ijD", atoms, cutoff=cutoffs)
@@ -96,7 +163,7 @@ def read_cgd(filename, node_symbol="C", edge_center_symbol="O"):
         coordination_numbers.append(coordination_number)
 
     node_positions = np.array(node_positions)
-    #coordination_numbers = np.array(coordination_numbers)
+    # coordination_numbers = np.array(coordination_numbers)
 
     # Parse edge information.
     edge_center_positions = []
@@ -109,7 +176,7 @@ def read_cgd(filename, node_symbol="C", edge_center_symbol="O"):
         pos_i = np.array([float(r) for r in tokens[1:4]])
         pos_j = np.array([float(r) for r in tokens[4:]])
 
-        edge_center_pos = 0.5 * (pos_i+pos_j)
+        edge_center_pos = 0.5 * (pos_i + pos_j)
         edge_center_positions.append(edge_center_pos)
 
     # New feature. Read EDGE_CENTER.
@@ -127,17 +194,19 @@ def read_cgd(filename, node_symbol="C", edge_center_symbol="O"):
     # Carbon for nodes, oxygen for edges.
     n_nodes = node_positions.shape[0]
     n_edges = edge_center_positions.shape[0]
-    species = np.concatenate([
-        np.full(shape=n_nodes, fill_value=node_symbol),
-        np.full(shape=n_edges, fill_value=edge_center_symbol),
-    ])
+    species = np.concatenate(
+        [
+            np.full(shape=n_nodes, fill_value=node_symbol),
+            np.full(shape=n_edges, fill_value=edge_center_symbol),
+        ]
+    )
 
     coords = np.concatenate([node_positions, edge_center_positions], axis=0)
 
     # Pymatget can handle : indicator in spacegroup.
     # Mark symmetrically equivalent sites.
     node_types = [i for i, _ in enumerate(node_positions)]
-    edge_types = [-(i+1) for i, _ in enumerate(edge_center_positions)]
+    edge_types = [-(i + 1) for i, _ in enumerate(edge_center_positions)]
     site_properties = {
         "type": node_types + edge_types,
         "cn": coordination_numbers + [2 for _ in edge_center_positions],
@@ -148,12 +217,12 @@ def read_cgd(filename, node_symbol="C", edge_center_symbol="O"):
         spacegroup = "Cmce"
 
     structure = mg.Structure.from_spacegroup(
-                    sg=spacegroup,
-                    lattice=mg.Lattice.from_parameters(*cellpar),
-                    species=species,
-                    coords=coords,
-                    site_properties=site_properties,
-                )
+        sg=spacegroup,
+        lattice=mg.Lattice.from_parameters(*cellpar),
+        species=species,
+        coords=coords,
+        site_properties=site_properties,
+    )
 
     # Add information.
     info = {
@@ -189,9 +258,7 @@ def read_cgd(filename, node_symbol="C", edge_center_symbol="O"):
 
         atoms.info["cn"] = cn
 
-        logger.debug(
-            "Overlapped positions are removed: index %s", set(J)
-        )
+        logger.debug("Overlapped positions are removed: index %s", set(J))
 
     return atoms
 
@@ -207,7 +274,7 @@ def read_budiling_block_xyz(bb_file):
     symbols = []
     positions = []
     connection_point_indices = []
-    for i, line in enumerate(lines[2 : n_atoms+2]):
+    for i, line in enumerate(lines[2 : n_atoms + 2]):
         tokens = line.split()
         symbol = tokens[0]
         position = [float(v) for v in tokens[1:]]
@@ -219,12 +286,12 @@ def read_budiling_block_xyz(bb_file):
 
     bonds = None
     bond_types = None
-    if len(lines) > n_atoms+2:
+    if len(lines) > n_atoms + 2:
         logger.debug("There are bonds in building block xyz. Reading...")
         bonds = []
         bond_types = []
 
-        for line in lines[n_atoms+2:]:
+        for line in lines[n_atoms + 2 :]:
             tokens = line.split()
             if len(tokens) < 3:
                 logger.debug("%s: len(line.split()) < 3 %s", bb_file, line)
@@ -285,7 +352,7 @@ def write_molecule_cif(filename, atoms, bond_pairs, bond_types):
         distances = np.linalg.norm(positions - com, axis=1)
         max_distances = np.max(distances)
 
-        box_length = 2*max_distances + 4
+        box_length = 2 * max_distances + 4
 
         f.write("_cell_length_a     {:.3f}\n".format(box_length))
         f.write("_cell_length_b     {:.3f}\n".format(box_length))
@@ -310,8 +377,9 @@ def write_molecule_cif(filename, atoms, bond_pairs, bond_types):
         # Write label and pos information.
         for i, (sym, fract) in enumerate(zip(symbols, fracts)):
             label = "{}{}".format(sym, i)
-            f.write("{} {} {:.5f} {:.5f} {:.5f} 0.0\n".
-                    format(label, sym, *fract))
+            f.write(
+                "{} {} {:.5f} {:.5f} {:.5f} 0.0\n".format(label, sym, *fract)
+            )
 
         # Write bonds information.
         f.write("loop_\n")
@@ -325,8 +393,6 @@ def write_molecule_cif(filename, atoms, bond_pairs, bond_types):
             label_i = "{}{}".format(symbols[i], i)
             label_j = "{}{}".format(symbols[j], j)
 
-            distance = np.linalg.norm(positions[i]-positions[j])
+            distance = np.linalg.norm(positions[i] - positions[j])
 
-            f.write("{} {} {:.3f} . {}\n".
-                format(label_i, label_j, distance, t)
-            )
+            f.write("{} {} {:.3f} . {}\n".format(label_i, label_j, distance, t))

@@ -42,6 +42,7 @@ repos:
         #       but don’t become crazy if you can’t.
         # E203: whitespace before ':'.
         # E402: module level import not at top of file.
-        args: ['--max-line-length=80', '--ignore=W503,E501,E203,E402']
+        # E741: ambiguous variable name.
+        args: ['--max-line-length=80', '--ignore=W503,E501,E203,E40,E741']
         # __init__ frequently violate F401, F403.
         exclude: '__init__'

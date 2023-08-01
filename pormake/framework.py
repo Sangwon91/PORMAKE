@@ -1,16 +1,16 @@
-import os
 import copy
+import os
 import traceback
-from pathlib import Path
 from collections import defaultdict
-
-import numpy as np
+from pathlib import Path
 
 import ase
-import ase.visualize
 import ase.neighborlist
+import ase.visualize
+import numpy as np
 
 from .log import logger
+
 
 class Framework:
     def __init__(self, atoms, bonds, bond_types, info, wrap=True):
@@ -27,16 +27,18 @@ class Framework:
         # Cleanup errors.
         s = self.atoms.get_scaled_positions()
         while (s >= 1.0).any() and (s < 0.0).any():
-            s = np.where(s < 0.0,
-                    s + np.ones_like(s),
-                    s,
-                )
-            s = np.where(s >= 1.0,
-                    s - np.ones_like(s),
-                    s,
-                )
+            s = np.where(
+                s < 0.0,
+                s + np.ones_like(s),
+                s,
+            )
+            s = np.where(
+                s >= 1.0,
+                s - np.ones_like(s),
+                s,
+            )
 
-        s[np.abs(s-1) < 1e-3] = 0.9999
+        s[np.abs(s - 1) < 1e-3] = 0.9999
         s[np.abs(s) < 1e-3] = 0.0001
 
         self.atoms.set_scaled_positions(s)
@@ -56,6 +58,7 @@ class Framework:
         try:
             self._write_cif(path)
         except Exception as e:
+            logger.error(e)
             logger.error(
                 "CIF writing fails with error: %s",
                 traceback.format_exc(),
@@ -82,8 +85,9 @@ class Framework:
                 bb = self.info["located_bbs"][i]
                 info_str += "#     Edge {}, Type {}, {}\n".format(i, t, bb)
             f.write(info_str)
-            f.write("# Relax obj value: {:.3f}\n"
-                    .format(self.info["relax_obj"]))
+            f.write(
+                "# Relax obj value: {:.3f}\n".format(self.info["relax_obj"])
+            )
             f.write("# Max RMSD: {:.3f}\n".format(self.info["max_rmsd"]))
             f.write("# Mean RMSD: {:.3f}\n".format(self.info["mean_rmsd"]))
 
@@ -97,8 +101,14 @@ class Framework:
             f.write("_symmetry_equiv_pos_as_xyz\n")
             f.write("'x, y, z'\n")
 
-            a, b, c, alpha, beta, gamma = \
-                self.atoms.get_cell_lengths_and_angles()
+            (
+                a,
+                b,
+                c,
+                alpha,
+                beta,
+                gamma,
+            ) = self.atoms.get_cell_lengths_and_angles()
 
             f.write("_cell_length_a     {:.3f}\n".format(a))
             f.write("_cell_length_b     {:.3f}\n".format(b))
@@ -119,15 +129,16 @@ class Framework:
             frac_coords = self.atoms.get_scaled_positions()
             for i, (sym, pos) in enumerate(zip(symbols, frac_coords)):
                 label = "{}{}".format(sym, i)
-                f.write("{} {} {:.5f} {:.5f} {:.5f} 0.0\n".
-                        format(label, sym, *pos))
+                f.write(
+                    "{} {} {:.5f} {:.5f} {:.5f} 0.0\n".format(label, sym, *pos)
+                )
 
             f.write("loop_\n")
             f.write("_geom_bond_atom_site_label_1\n")
             f.write("_geom_bond_atom_site_label_2\n")
             f.write("_geom_bond_distance\n")
             f.write("_geom_bond_site_symmetry_2\n")
-            f.write("_ccdc_geom_bond_type\n") # ?????????
+            f.write("_ccdc_geom_bond_type\n")  # ?????????
 
             # Make bond type dict.
             bond_type_dict = {}
@@ -136,7 +147,8 @@ class Framework:
 
             # Get images and distances.
             I, J, S, D = ase.neighborlist.neighbor_list(
-                            "ijSd", self.atoms, cutoff=6.0)
+                "ijSd", self.atoms, cutoff=6.0
+            )
             image_dict = {}
             distance_dict = defaultdict(lambda: 1e30)
             origin = np.array([5, 5, 5])
@@ -161,12 +173,16 @@ class Framework:
                 image = image_dict[(i, j)]
 
                 if (image == origin).all():
-                    f.write("{} {} {:.3f} . {}\n".
-                        format(label_i, label_j, distance, bond_type)
+                    f.write(
+                        "{} {} {:.3f} . {}\n".format(
+                            label_i, label_j, distance, bond_type
+                        )
                     )
                 else:
-                    f.write("{} {} {:.3f} 1_{}{}{} {}\n".
-                        format(label_i, label_j, distance, *image, bond_type)
+                    f.write(
+                        "{} {} {:.3f} 1_{}{}{} {}\n".format(
+                            label_i, label_j, distance, *image, bond_type
+                        )
                     )
 
     def view(self, *args, **kwargs):

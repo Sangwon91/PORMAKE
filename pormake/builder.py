@@ -2,11 +2,12 @@ from collections import defaultdict
 
 import numpy as np
 
-from .log import logger
 from .framework import Framework
-from .scaler import Scaler
-from .locator import Locator
 from .local_structure import LocalStructure
+from .locator import Locator
+from .log import logger
+from .scaler import Scaler
+
 
 # bb: building block.
 class Builder:
@@ -46,7 +47,8 @@ class Builder:
             t = tuple(t)
             if t not in edge_bbs:
                 logger.info(
-                    "No edge building block for type %s in edge_bbs.", t)
+                    "No edge building block for type %s in edge_bbs.", t
+                )
 
         for i in topology.edge_indices:
             t = tuple(topology.edge_types[i])
@@ -116,15 +118,18 @@ class Builder:
                 logger.info(
                     "Use given permutation for node slot index %d"
                     ", permutation: %s",
-                    i, perm
+                    i,
+                    perm,
                 )
 
-                located_node, rmsd = \
-                    locator.locate_with_permutation(target, node_bb, perm)
+                located_node, rmsd = locator.locate_with_permutation(
+                    target, node_bb, perm
+                )
 
                 logger.info(
                     "Pre-location of node slot %d, RMSD: %.2E",
-                    i, rmsd,
+                    i,
+                    rmsd,
                 )
 
                 located_bbs[i] = located_node
@@ -136,14 +141,16 @@ class Builder:
             key = (t, node_bb.name)
             if slot_min_rmsd[key] < 0.0:
                 rmsd = locator.calculate_rmsd(
-                           target, node_bb, max_n_slices=max_n_slices)
+                    target, node_bb, max_n_slices=max_n_slices
+                )
 
                 chiral_node_bb = node_bb.make_chiral_building_block()
                 c_rmsd = locator.calculate_rmsd(target, chiral_node_bb)
                 slot_min_rmsd[key] = min(rmsd, c_rmsd)
                 logger.info(
                     "== Min RMSD of (node type: %s, node bb: %s): %.2E",
-                    *key, slot_min_rmsd[key]
+                    *key,
+                    slot_min_rmsd[key],
                 )
             # Only orientation.
             # Translations are applied after topology relexation.
@@ -152,31 +159,39 @@ class Builder:
                 "Pre-location at node slot %d"
                 ", (node type: %s, node bb: %s)"
                 ", RMSD: %.2E",
-                i, *key, rmsd,
+                i,
+                *key,
+                rmsd,
             )
             # If RMSD is different from min RMSD relocate with high accuracy.
             # 1% error.
             ratio = rmsd / slot_min_rmsd[key]
             if ratio > 1.01:
-                located_node, perm, rmsd = \
-                    locator.locate(target, node_bb, max_n_slices=max_n_slices)
+                located_node, perm, rmsd = locator.locate(
+                    target, node_bb, max_n_slices=max_n_slices
+                )
                 logger.info(
                     "RMSD > MIN_RMSD*1.01, relocate Node %d"
                     " with %d trial orientations, RMSD: %.2E",
-                    i, max_n_slices**3, rmsd
+                    i,
+                    max_n_slices**3,
+                    rmsd,
                 )
 
             ratio = rmsd / slot_min_rmsd[key]
             if ratio > 1.01:
                 # Make chiral building block.
                 node_bb = node_bb.make_chiral_building_block()
-                located_node, perm, rmsd = \
-                    locator.locate(target, node_bb, max_n_slices=max_n_slices)
+                located_node, perm, rmsd = locator.locate(
+                    target, node_bb, max_n_slices=max_n_slices
+                )
                 logger.info(
                     "RMSD > MIN_RMSD*1.01, relocate Node %d"
                     " with %d trial orientations and chiral building block"
                     ", RMSD: %.2E",
-                    i, max_n_slices**3, rmsd
+                    i,
+                    max_n_slices**3,
+                    rmsd,
                 )
 
             # Critical error.
@@ -210,7 +225,8 @@ class Builder:
                 logger.info(
                     "Use given permutation for edge slot %d"
                     ", permutation: %s",
-                    e, permutations[e]
+                    e,
+                    permutations[e],
                 )
                 located_bbs[e] = edge_bb
                 continue
@@ -232,11 +248,11 @@ class Builder:
         # Change topology to scaled topology.
         original_topology = topology
         topology, scaling_result = self.scaler.scale(
-                                       topology=topology,
-                                       bbs=located_bbs,
-                                       perms=permutations,
-                                       return_result=True
-                                   )
+            topology=topology,
+            bbs=located_bbs,
+            perms=permutations,
+            return_result=True,
+        )
 
         rmsd_values = []
         # Relocate and translate node building blocks.
@@ -246,8 +262,9 @@ class Builder:
             # Get target.
             target = topology.local_structure(i)
             # Orientation.
-            located_node, rmsd = \
-                locator.locate_with_permutation(target, node_bb, perm)
+            located_node, rmsd = locator.locate_with_permutation(
+                target, node_bb, perm
+            )
             # Translation.
             centroid = topology.atoms.positions[i]
             located_node.set_centroid(centroid)
@@ -260,7 +277,10 @@ class Builder:
                 "Location at node slot %d"
                 ", (node type: %s, node bb: %s)"
                 ", RMSD: %.2E",
-                i, t, node_bb.name, rmsd,
+                i,
+                t,
+                node_bb.name,
+                rmsd,
             )
 
             rmsd_values.append(rmsd)
@@ -324,7 +344,7 @@ class Builder:
             ri = topology.atoms.positions[i]
             rj = topology.atoms.positions[j]
 
-            image = (d - (rj-ri)) @ invc
+            image = (d - (rj - ri)) @ invc
 
             return image
 
@@ -352,15 +372,16 @@ class Builder:
             r2 = bb2.atoms.positions[a2]
 
             image = calc_image(n1, n2, invc)
-            d = r2 - r1 + image@c
+            d = r2 - r1 + image @ c
 
-            ## This may outside of the unit cell. Should be changed.
-            centroid = r1 + 0.5*d
+            # This may outside of the unit cell. Should be changed.
+            centroid = r1 + 0.5 * d
             perm = permutations[e]
 
-            target = LocalStructure(np.array([r1, r1+d]), [i1, i2])
-            located_edge, rmsd = \
-                locator.locate_with_permutation(target, edge_bb, perm)
+            target = LocalStructure(np.array([r1, r1 + d]), [i1, i2])
+            located_edge, rmsd = locator.locate_with_permutation(
+                target, edge_bb, perm
+            )
 
             located_edge.set_centroid(centroid)
             located_bbs[e] = located_edge
@@ -374,9 +395,9 @@ class Builder:
         index_offsets[0] = 0
         for i, bb in enumerate(located_bbs[:-1]):
             if bb is None:
-                index_offsets[i+1] = index_offsets[i] + 0
+                index_offsets[i + 1] = index_offsets[i] + 0
             else:
-                index_offsets[i+1] = index_offsets[i] + bb.n_atoms
+                index_offsets[i + 1] = index_offsets[i] + bb.n_atoms
 
         bb_bonds = []
         bb_bond_types = []
@@ -414,14 +435,17 @@ class Builder:
                 bond_types += ["S", "S"]
                 logger.debug(
                     "Bonds on topology edge %s are connected %s, %s.",
-                    j, bonds[-2], bonds[-1],
+                    j,
+                    bonds[-2],
+                    bonds[-1],
                 )
             else:
                 bonds.append((a1, a2))
                 bond_types += ["S"]
                 logger.debug(
                     "Bonds on topology edge %s are connected %s.",
-                    j, bonds[-1],
+                    j,
+                    bonds[-1],
                 )
 
         bonds = np.array(bonds)
@@ -468,15 +492,10 @@ class Builder:
                 new_bond_types.append(t)
 
         for i, j in XX_bonds:
-            new_bonds.append((
-                X_neighbor_list[i],
-                X_neighbor_list[j]
-            ))
+            new_bonds.append((X_neighbor_list[i], X_neighbor_list[j]))
             new_bond_types.append("S")
 
-        all_bonds = [
-            (new_indices[i], new_indices[j]) for i, j in new_bonds
-        ]
+        all_bonds = [(new_indices[i], new_indices[j]) for i, j in new_bonds]
         all_bonds = np.array(all_bonds)
         all_bond_types = new_bond_types
 
@@ -497,11 +516,7 @@ class Builder:
             wrap = kwargs["wrap"]
 
         framework = Framework(
-            framework_atoms,
-            all_bonds,
-            all_bond_types,
-            info=info,
-            wrap=wrap
+            framework_atoms, all_bonds, all_bond_types, info=info, wrap=wrap
         )
         logger.info("Construction of framework done.")
 
