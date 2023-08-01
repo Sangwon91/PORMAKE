@@ -5,6 +5,11 @@
 >
 > Please cite [me](https://pubs.acs.org/doi/abs/10.1021/acsami.1c02471) if you find it useful!
 
+Development Roadmap (updated 2023.08.01):
+1. Enrich the code with descriptive docstrings.
+2. Fortify the project by implementing comprehensive test code.
+3. Development of an enhanced algorithm for improved placement of edge building blocks (considering symmetry).
+
 ## Installation
 
 ### 1. Using PIP
