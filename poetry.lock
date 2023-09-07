@@ -528,28 +528,28 @@ files = [
 
 [[package]]
 name = "emmet-core"
-version = "0.39.6"
+version = "0.67.5"
 description = "Core Emmet Library"
 category = "main"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "emmet-core-0.39.6.tar.gz", hash = "sha256:155bf361fb86ed9feba891324b3263ff70c3a89a7ba6af885f32e867a297fdbe"},
-    {file = "emmet_core-0.39.6-py3-none-any.whl", hash = "sha256:1e2d7a834892f9b204e5c20b10483638f46ed004c9a2a02e672e0d147bf24b60"},
+    {file = "emmet-core-0.67.5.tar.gz", hash = "sha256:7bfd2e7c21787ccb74e7386a92b076b7ca2980ec98c5bfa36b1bc0fec69a1843"},
+    {file = "emmet_core-0.67.5-py3-none-any.whl", hash = "sha256:1e102c54872e16d64eeb1196b11d6d448a7d2916705af0955e6467d53cf45b55"},
 ]
 
 [package.dependencies]
-monty = ">=2021.3,<2023.0"
+monty = ">=2021.3"
 pybtex = ">=0.24,<1.0"
-pydantic = ">=1.10.2"
-pymatgen = ">=2021.3,<2023.0"
+pydantic = ">=1.10.2,<2.0"
+pymatgen = ">=2023.7.20"
 spglib = ">=2.0.1"
 typing-extensions = ">=3.7,<5.0"
 
 [package.extras]
-all = ["pymatgen-analysis-alloys (>=0.0.3)", "pymatgen-analysis-diffusion (>=2022.1.15)", "robocrys (>=0.2.7)", "seekpath (>=2.0.1)"]
+all = ["pymatgen-analysis-alloys (>=0.0.3)", "pymatgen-analysis-diffusion (>=2023.8.15)", "robocrys (>=0.2.8)", "seekpath (>=2.0.1)"]
 docs = ["jinja2", "livereload", "mkdocs", "mkdocs-awesome-pages-plugin", "mkdocs-markdownextradata-plugin", "mkdocs-material (<8.3)", "mkdocs-material-extensions", "mkdocs-minify-plugin", "mkdocstrings", "mkdocstrings[python]"]
-test = ["flake8", "maggma", "mypy", "mypy-extensions", "openbabel", "pre-commit", "pycodestyle", "pydocstyle", "pytest", "pytest-cov", "types-requests", "types-setuptools", "wincertstore"]
+test = ["custodian (>=2022.5.26)", "flake8", "maggma", "mypy", "mypy-extensions", "pre-commit", "pycodestyle", "pydocstyle", "pytest", "pytest-cov", "types-requests", "types-setuptools", "wincertstore"]
 
 [[package]]
 name = "entrypoints"
@@ -934,6 +934,18 @@ MarkupSafe = ">=2.0"
 
 [package.extras]
 i18n = ["Babel (>=2.7)"]
+
+[[package]]
+name = "joblib"
+version = "1.3.2"
+description = "Lightweight pipelining with Python functions"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "joblib-1.3.2-py3-none-any.whl", hash = "sha256:ef4331c65f239985f3f2220ecc87db222f08fd22097a3dd5698f693875f8cbb9"},
+    {file = "joblib-1.3.2.tar.gz", hash = "sha256:92f865e621e17784e7955080b6d042489e3b8e294949cc44c6eac304f59772b1"},
+]
 
 [[package]]
 name = "jsonpointer"
@@ -2240,22 +2252,33 @@ plugins = ["importlib-metadata"]
 
 [[package]]
 name = "pymatgen"
-version = "2022.11.7"
+version = "2023.8.10"
 description = "Python Materials Genomics is a robust materials analysis code that defines core object representations for structures and molecules with support for many electronic structure codes. It is currently the core analysis code powering the Materials Project (https://materialsproject.org)."
 category = "main"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "pymatgen-2022.11.7-cp310-cp310-macosx_10_15_x86_64.whl", hash = "sha256:107544fd1fe48aa97d932b7897b46f0db56903c23e44ae971ebf7c3af0b38e99"},
-    {file = "pymatgen-2022.11.7-cp310-cp310-win_amd64.whl", hash = "sha256:8119ad5179002669d201a858b646c886a5775b6b478b64669b24a7c8c2e04404"},
-    {file = "pymatgen-2022.11.7-cp38-cp38-macosx_10_15_x86_64.whl", hash = "sha256:3c104b53850fd6fb9891d5095ca1a2459cf8a2f071bfe03cd687fce67f4a70ff"},
-    {file = "pymatgen-2022.11.7-cp38-cp38-win_amd64.whl", hash = "sha256:345965e4ef56014d1f16827dfd56477807eab0079ed7da608e321ca6d2ebcb45"},
-    {file = "pymatgen-2022.11.7-cp39-cp39-macosx_10_15_x86_64.whl", hash = "sha256:2baaa93dda35e5aa0b4c4521c809a0f5dfd6405293dfcedbd9dc7a7f0a9f007a"},
-    {file = "pymatgen-2022.11.7-cp39-cp39-win_amd64.whl", hash = "sha256:c9ccd4be777a376897ba150826e3f0b9ac9ebf369fb9478cb79a35e042817c25"},
-    {file = "pymatgen-2022.11.7.tar.gz", hash = "sha256:e30ed85c480df491b576b08cc5a2900027da3896351fbf9045bdeddf31aab651"},
+    {file = "pymatgen-2023.8.10-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:054bd579be44db4513c75c11d1f53a780aa6ac98c188baf9bc4ac818ddaeeae2"},
+    {file = "pymatgen-2023.8.10-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:02adbcd8f19a4e41b4d68328340d58e602593234f2c2df72115f9775ee7ed827"},
+    {file = "pymatgen-2023.8.10-cp310-cp310-win32.whl", hash = "sha256:1a5457f623d0d8ae22d3c218c0348999f0d19bf9b95c2fb6b5708a0899d5a38e"},
+    {file = "pymatgen-2023.8.10-cp310-cp310-win_amd64.whl", hash = "sha256:4657051061245027a3ffacf0ecfee12e6ee5de20cfee5f3d4f0a0eb56d94e2b8"},
+    {file = "pymatgen-2023.8.10-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:6ad70d9da37463706ce1181725acd1fbabf963af4f6a348b167615e5e04933d3"},
+    {file = "pymatgen-2023.8.10-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5b3b0a54c9b6c7c49045198d1186f6951e32e85a90746c3ebfa152b1f5b3ce3f"},
+    {file = "pymatgen-2023.8.10-cp311-cp311-win32.whl", hash = "sha256:cfe4ca205dec8cc2c41d85d7a24d49fc23da7b7fb7b6560945ba48196da59a05"},
+    {file = "pymatgen-2023.8.10-cp311-cp311-win_amd64.whl", hash = "sha256:e0b7d1b452a2d6969c34b8fd0d0439c14495f785da491dd893f1afc9a8fd302f"},
+    {file = "pymatgen-2023.8.10-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:eae60ef48d7c0f906ee6b932f9301fb455b9d9e47f04d528993fa229b61f2322"},
+    {file = "pymatgen-2023.8.10-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:3693eb8c537d8e4197878f0ddc2c9bcae888fcbcb9643b6d6b907f40541a0d35"},
+    {file = "pymatgen-2023.8.10-cp38-cp38-win32.whl", hash = "sha256:73734cc5b5c52c4879eedc353936d4fe7d785fc8b6d297f82a287d1f4e8431cc"},
+    {file = "pymatgen-2023.8.10-cp38-cp38-win_amd64.whl", hash = "sha256:316b8ddf74999fed09fd6aa44503976d8c1b4b8d3916d9f61c5b61c9a74bc7d3"},
+    {file = "pymatgen-2023.8.10-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:6387efd84481720f366d4d6052de0df45dbb9df394876f13527502fbe8014433"},
+    {file = "pymatgen-2023.8.10-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:81d89fbdce2778a0b74c8552a8fa7a05cfaff81adf74da9876f5e31f589ed443"},
+    {file = "pymatgen-2023.8.10-cp39-cp39-win32.whl", hash = "sha256:8fcda2e297d532bc4e94105ce4c9070ecc8729819111ae4134339a32a42bd00d"},
+    {file = "pymatgen-2023.8.10-cp39-cp39-win_amd64.whl", hash = "sha256:42750caf29803c166e6259578bc295699de8497efa48b3ba59ac503543633c02"},
+    {file = "pymatgen-2023.8.10.tar.gz", hash = "sha256:eb3a3b82d5b5fd1c8e63fc21b6413179d42f2a815daf26110f33f55bd2ba3ce2"},
 ]
 
 [package.dependencies]
+joblib = "*"
 matplotlib = ">=1.5"
 monty = ">=3.0.2"
 mp-api = ">=0.27.3"
@@ -2265,6 +2288,7 @@ palettable = ">=3.1.1"
 pandas = "*"
 plotly = ">=4.5.0"
 pybtex = "*"
+pydantic = "<2.0.0"
 requests = "*"
 "ruamel.yaml" = ">=0.17.0"
 scipy = ">=1.5.0"
@@ -2277,9 +2301,13 @@ uncertainties = ">=3.1.4"
 [package.extras]
 abinit = ["netcdf4"]
 ase = ["ase (>=3.3)"]
-dev = ["black", "coverage", "coveralls", "doc2dash", "flake8", "mypy (==0.982)", "pre-commit", "pydocstyle", "pylint", "pytest", "pytest-cov", "pytest-split", "sphinx", "sphinx-rtd-theme"]
-optional = ["BoltzTraP2 (>=22.3.2)", "ase (>=3.22.1)", "chemview (>=0.6)", "f90nml (>=1.1.2)", "fdint (>=2.0.2)", "galore (>=0.6.1)", "h5py (==3.6.0)", "jarvis-tools (>=2020.7.14)", "netCDF4 (>=1.5.8)", "phonopy (>=2.4.2)", "seekpath (>=1.9.4)"]
-relaxation = ["m3gnet"]
+dev = ["black", "mypy", "pre-commit", "pytest", "pytest-cov", "pytest-split", "ruff"]
+docs = ["doc2dash", "sphinx", "sphinx-rtd-theme"]
+electronic-structure = ["fdint (>=2.0.2)"]
+numba = ["numba"]
+optional = ["BoltzTraP2 (>=22.3.2)", "ase (>=3.22.1)", "chemview (>=0.6)", "chgnet", "f90nml (>=1.1.2)", "galore (>=0.6.1)", "h5py (>=3.8.0)", "jarvis-tools (>=2020.7.14)", "matgl", "netCDF4 (>=1.5.8)", "phonopy (>=2.4.2)", "seekpath (>=1.9.4)", "tblite[ase] (>=0.3.0)"]
+relaxation = ["chgnet", "matgl"]
+tblite = ["tblite[ase] (>=0.3.0)"]
 vis = ["vtk (>=6.0.0)"]
 
 [[package]]
@@ -3153,4 +3181,4 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "6276d14fe870e5a820e680462b8c540a39ca60a2d4319fe530035553bff4e9ba"
+content-hash = "093e4d9b466cf692b50097c245c32d1bb8a3916456409521d44660c0f2c2f3c7"

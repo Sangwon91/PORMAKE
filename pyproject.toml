@@ -17,7 +17,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.8"
-pymatgen = "^2022.11.7"
+pymatgen = "^2023.8.10"
 ase = "^3.22.1"
 jax = {extras = ["cpu"], version = "^0.4.1"}
 
