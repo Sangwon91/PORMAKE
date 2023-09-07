@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pormake"
-version = "0.1.1"
+version = "0.1.2"
 description = "Python library for the construction of porous materials using topology and building blocks"
 authors = ["Sangwon Lee <lsw91.main@gmail.com>"]
 license = "MIT"
