@@ -1,4 +1,4 @@
-"""Experimental MOF destructor module. It's refactored from the legacy code used
+"""Experimental MOF Decomposer module. It's refactored from the legacy code used
 in the PORMAKE paper. It is an experimental feature and may not be stable.
 """
 import collections
@@ -138,9 +138,9 @@ def remove_pbc_cuts(atoms):
     return atoms
 
 
-class MOFDestructor:
+class MOFDecomposer:
     def __init__(self, cif, X_type='X'):
-        """MOF destructor class. It is an experimental feature and may not be
+        """MOF decomposer class. It is an experimental feature and may not be
         stable.
 
         TODO:
