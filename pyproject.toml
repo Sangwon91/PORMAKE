@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pormake"
-version = "0.1.2"
+version = "0.2.0"
 description = "Python library for the construction of porous materials using topology and building blocks"
 authors = ["Sangwon Lee <lsw91.main@gmail.com>"]
 license = "MIT"
@@ -20,6 +20,7 @@ python = "^3.8"
 pymatgen = "^2023.8.10"
 ase = "^3.22.1"
 jax = {extras = ["cpu"], version = "^0.4.1"}
+networkx = "^3.1"
 
 
 [tool.poetry.group.dev.dependencies]

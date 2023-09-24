@@ -3,12 +3,21 @@
 
 > Python library for the construction of porous materials using topology and building blocks.
 >
-> Please cite [me](https://pubs.acs.org/doi/abs/10.1021/acsami.1c02471) if you find it useful!
+> [Please cite me if you find it useful!](https://pubs.acs.org/doi/abs/10.1021/acsami.1c02471)
 
 Development Roadmap (updated 2023.08.01):
 1. Enrich the code with descriptive docstrings.
 2. Fortify the project by implementing comprehensive test code.
 3. Development of an enhanced algorithm for improved placement of edge building blocks (considering symmetry).
+
+## Release Note
+Version: `0.2.0`
+
+**New feature added**: A module for extracting building blocks from MOFs
+
+[MOF Decomposer README](./pormake/experimental/decomposer/README.md)
+
+<image src="doc/decomposer.png" width="500px"></image>
 
 ## Installation
 
