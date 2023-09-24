@@ -7,3 +7,4 @@ test*
 *.log
 *.pickle
 *.log
+.ipynb_checkpoints
