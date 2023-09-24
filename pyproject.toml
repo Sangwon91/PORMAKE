@@ -27,6 +27,7 @@ ipykernel = "^6.19.4"
 ipywidgets = "^7.6.0"
 nglview = "^3.0.3"
 pre-commit = "^3.3.3"
+notebook = "^7.0.4"
 
 [build-system]
 requires = ["poetry-core"]
