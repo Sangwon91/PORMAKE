@@ -279,7 +279,10 @@ def read_budiling_block_xyz(bb_file):
         tokens = line.split()
         symbol = tokens[0]
         position = [float(v) for v in tokens[1:4]]
-        charge = tokens[4]
+        if len(tokens) == 5:
+            charge = float(tokens[4])
+        else:
+            charge = 0.0
 
         symbols.append(symbol)
         positions.append(position)
