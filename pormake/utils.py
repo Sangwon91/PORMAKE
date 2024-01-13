@@ -273,14 +273,17 @@ def read_budiling_block_xyz(bb_file):
 
     symbols = []
     positions = []
+    charges = []
     connection_point_indices = []
     for i, line in enumerate(lines[2 : n_atoms + 2]):
         tokens = line.split()
         symbol = tokens[0]
-        position = [float(v) for v in tokens[1:]]
+        position = [float(v) for v in tokens[1:4]]
+        charge = tokens[4]
 
         symbols.append(symbol)
         positions.append(position)
+        charges.append(charge)
         if symbol == "X":
             connection_point_indices.append(i)
 
@@ -310,7 +313,7 @@ def read_budiling_block_xyz(bb_file):
     info["bonds"] = bonds
     info["bond_types"] = bond_types
 
-    atoms = ase.Atoms(symbols=symbols, positions=positions, info=info)
+    atoms = ase.Atoms(symbols=symbols, positions=positions, charges=charges, info=info)
 
     return atoms
 
@@ -372,13 +375,14 @@ def write_molecule_cif(filename, atoms, bond_pairs, bond_types):
         # Get fractional coordinates
         # fractional coordinate of C.O.M is (0.5, 0.5, 0.5).
         symbols = atoms.get_chemical_symbols()
+        charges = atoms.get_initial_charges()
         fracts = (positions - com) / box_length + 0.5
 
         # Write label and pos information.
-        for i, (sym, fract) in enumerate(zip(symbols, fracts)):
+        for i, (sym, fract, charge) in enumerate(zip(symbols, fracts, charges)):
             label = "{}{}".format(sym, i)
             f.write(
-                "{} {} {:.5f} {:.5f} {:.5f} 0.0\n".format(label, sym, *fract)
+                "{} {} {:.5f} {:.5f} {:.5f} {:.5f}\n".format(label, sym, *fract, charge)
             )
 
         # Write bonds information.

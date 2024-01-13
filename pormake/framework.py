@@ -126,11 +126,12 @@ class Framework:
             f.write("_atom_type_partial_charge\n")
 
             symbols = self.atoms.symbols
+            charges = self.atoms.get_initial_charges()
             frac_coords = self.atoms.get_scaled_positions()
-            for i, (sym, pos) in enumerate(zip(symbols, frac_coords)):
+            for i, (sym, pos, charge) in enumerate(zip(symbols, frac_coords, charges)):
                 label = "{}{}".format(sym, i)
                 f.write(
-                    "{} {} {:.5f} {:.5f} {:.5f} 0.0\n".format(label, sym, *pos)
+                    "{} {} {:.5f} {:.5f} {:.5f} {:.5f}\n".format(label, sym, *pos, charge)
                 )
 
             f.write("loop_\n")
