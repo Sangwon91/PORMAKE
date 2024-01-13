@@ -11,6 +11,14 @@ Development Roadmap (updated 2023.08.01):
 3. Development of an enhanced algorithm for improved placement of edge building blocks (considering symmetry).
 
 ## Release Note
+Version: `0.2.1`
+
+**New feature added**: Building blocks with partial charge
+
+The example can be found in [here](./example/notebook/test_charged.py). 
+
+Thank you for your valuable contribution [aniruddha-seal](https://github.com/aniruddha-seal)!
+
 Version: `0.2.0`
 
 **New feature added**: A module for extracting building blocks from MOFs
