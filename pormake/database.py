@@ -14,13 +14,15 @@ class Database:
             self.topo_dir = db_path / "topologies"
             logger.debug("Default topology DB is loaded.")
         else:
-            self.topo_dir = topo_dir
+            self.topo_dir = Path(topo_dir)
+            logger.debug('topo_dir type is changed to %s' % type(self.topo_dir))
 
         if bb_dir is None:
             self.bb_dir = db_path / "bbs"
             logger.debug("Default building block DB is loaded.")
         else:
-            self.bb_dir = bb_dir
+            self.bb_dir = Path(bb_dir)
+            logger.debug('bb_dir type is changed to %s' % type(self.bb_dir))
 
         if not self.topo_dir.exists():
             message = "%s does not exist." % self.topo_dir
@@ -83,7 +85,7 @@ class Database:
             logger.debug("Topology is loaded from pickle.")
             return topo
         except Exception as e:
-            logger.exception(e)
+            # logger.exception(e)
             logger.debug("No %s.pickle in DB. Try cgd format.", name)
 
         cgd_path = self.topo_dir / (name + ".cgd")
