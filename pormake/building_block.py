@@ -177,28 +177,31 @@ class BuildingBlock:
         # Read the XYZ file
         edge = self
         atoms = self.atoms
-        
+
         # Extract symbols and positions
         positions = atoms.get_positions()
-        
+
         # Find the indices of the two atoms with the given symbol
         indices = edge.connection_point_indices
         if len(indices) != 2:
             raise ValueError("Number of edge connection point is not 2")
-        
+
         # Get the coordinates of the two atoms
         coord1 = positions[indices[0]]
         coord2 = positions[indices[1]]
-        
+
         # Define the axis vector
         axis_vector = coord2 - coord1
         axis_unit_vector = axis_vector / np.linalg.norm(axis_vector)
-        
+
         # Calculate the projection of each atom onto the axis
         projections = np.dot(positions - coord1, axis_unit_vector)
-        
+
         # Find the index of the atom with the maximum distance from the axis
-        distances = np.linalg.norm((positions - coord1) - np.outer(projections, axis_unit_vector), axis=1)
+        distances = np.linalg.norm(
+            (positions - coord1) - np.outer(projections, axis_unit_vector),
+            axis=1,
+        )
         furthest_atom_index = np.argmax(distances)
-        
+
         return furthest_atom_index

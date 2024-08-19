@@ -128,15 +128,21 @@ class Framework:
             symbols = self.atoms.symbols
             charges = self.atoms.get_initial_charges()
             frac_coords = self.atoms.get_scaled_positions()
-            for i, (sym, pos, charge) in enumerate(zip(symbols, frac_coords, charges)):
+            for i, (sym, pos, charge) in enumerate(
+                zip(symbols, frac_coords, charges)
+            ):
                 label = "{}{}".format(sym, i)
                 if spacegroup_vis:
                     f.write(
-                        "{} {} {:.5f} {:.5f} {:.5f} {:.5f}\n".format(label, sym, *pos, charge)
-                    )                
-                if (sym != 'Ne') and (not spacegroup_vis):    
+                        "{} {} {:.5f} {:.5f} {:.5f} {:.5f}\n".format(
+                            label, sym, *pos, charge
+                        )
+                    )
+                if (sym != 'Ne') and (not spacegroup_vis):
                     f.write(
-                        "{} {} {:.5f} {:.5f} {:.5f} {:.5f}\n".format(label, sym, *pos, charge)
+                        "{} {} {:.5f} {:.5f} {:.5f} {:.5f}\n".format(
+                            label, sym, *pos, charge
+                        )
                     )
 
             f.write("loop_\n")

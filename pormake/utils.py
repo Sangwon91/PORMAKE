@@ -316,7 +316,9 @@ def read_budiling_block_xyz(bb_file):
     info["bonds"] = bonds
     info["bond_types"] = bond_types
 
-    atoms = ase.Atoms(symbols=symbols, positions=positions, charges=charges, info=info)
+    atoms = ase.Atoms(
+        symbols=symbols, positions=positions, charges=charges, info=info
+    )
 
     return atoms
 
@@ -385,7 +387,9 @@ def write_molecule_cif(filename, atoms, bond_pairs, bond_types):
         for i, (sym, fract, charge) in enumerate(zip(symbols, fracts, charges)):
             label = "{}{}".format(sym, i)
             f.write(
-                "{} {} {:.5f} {:.5f} {:.5f} {:.5f}\n".format(label, sym, *fract, charge)
+                "{} {} {:.5f} {:.5f} {:.5f} {:.5f}\n".format(
+                    label, sym, *fract, charge
+                )
             )
 
         # Write bonds information.

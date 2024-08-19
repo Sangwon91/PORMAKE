@@ -1,11 +1,11 @@
-from collections import defaultdict
 import json
+from collections import defaultdict
 from pathlib import Path
 
-from ase import Atoms
 import numpy as np
-from scipy.spatial.transform import Rotation as R
 import spglib
+from ase import Atoms
+from scipy.spatial.transform import Rotation as R
 
 from .framework import Framework
 from .local_structure import LocalStructure
@@ -21,7 +21,7 @@ def rotate_edge(edge, angle_deg):
     Args:
         edge: edge building block
         angle_deg: ratate angle, 0 to 360
-    
+
     """
     molecule = edge.atoms
     axis_start = edge.connection_points[0]
@@ -35,7 +35,8 @@ def rotate_edge(edge, angle_deg):
     rotated_positions = rotation.apply(translated_positions)
     new_positions = rotated_positions + np.array(axis_start)
     molecule.set_positions(new_positions)
-    
+
+
 # bb: building block.
 class Builder:
     def __init__(self, locator=None, scaler=None):
@@ -86,7 +87,9 @@ class Builder:
 
         return bbs
 
-    def build_by_type(self, topology, node_bbs, edge_bbs=None, starting_edge=0, **kwargs):
+    def build_by_type(
+        self, topology, node_bbs, edge_bbs=None, starting_edge=0, **kwargs
+    ):
         bbs = self.make_bbs_by_type(topology, node_bbs, edge_bbs)
         return self.build(topology, bbs, starting_edge, **kwargs)
 
@@ -374,6 +377,7 @@ class Builder:
             image = (d - (rj - ri)) @ invc
 
             return image
+
         none_edge_list = []
         # Locate edges.
         logger.info("Start placing edges.")
@@ -389,8 +393,8 @@ class Builder:
             if "rotate_angle_list" in kwargs:
                 for j in range(topology.n_edges):
                     if i == j:
-                        rotate_edge(edge_bb,kwargs['rotate_angle_list'][j])
-            
+                        rotate_edge(edge_bb, kwargs['rotate_angle_list'][j])
+
             n1, n2 = topology.neighbor_list[e]
 
             i1 = n1.index
@@ -419,15 +423,19 @@ class Builder:
             located_edge.set_centroid(centroid)
             # edge representer 설정
             if "extra" in kwargs and i in kwargs['extra']:
-                ori_symbol_Kr=located_edge.atoms[kwargs['edge_represent']].symbol
-                located_edge.atoms[kwargs['edge_represent']].symbol='Kr'
-                located_edge.atoms[kwargs['edge_represent']].tag=i+1
+                ori_symbol_Kr = located_edge.atoms[
+                    kwargs['edge_represent']
+                ].symbol
+                located_edge.atoms[kwargs['edge_represent']].symbol = 'Kr'
+                located_edge.atoms[kwargs['edge_represent']].tag = i + 1
             if "edge_represent" in kwargs and i == starting_edge:
-                ori_symbol_Br=located_edge.atoms[kwargs['edge_represent']].symbol
-                located_edge.atoms[kwargs['edge_represent']].symbol='Br'
-                located_edge.atoms[kwargs['edge_represent']].tag=i+1
+                ori_symbol_Br = located_edge.atoms[
+                    kwargs['edge_represent']
+                ].symbol
+                located_edge.atoms[kwargs['edge_represent']].symbol = 'Br'
+                located_edge.atoms[kwargs['edge_represent']].tag = i + 1
             elif "edge_represent" in kwargs:
-                located_edge.atoms[kwargs['edge_represent']].tag=i+1
+                located_edge.atoms[kwargs['edge_represent']].tag = i + 1
             located_bbs[e] = located_edge
 
             logger.debug(f"Edge {e}, RMSD: {rmsd:.2E}")
@@ -563,8 +571,8 @@ class Builder:
             framework_atoms, all_bonds, all_bond_types, info=info, wrap=wrap
         )
         logger.info("Construction of framework done.")
-        
-        #Get space group of topology from json file
+
+        # Get space group of topology from json file
         current_file = Path(__file__).resolve()
         current_dir = current_file.parent
         target_file = current_dir / 'database' / 'spacegroup.json'
@@ -573,37 +581,56 @@ class Builder:
         spacegroup_number = loaded_dict[topology.spacegroup]
         if "spg" in kwargs:
             spacegroup_number = kwargs["spg"]
-        
+
         # Place Ne atoms for space group
         for i, atom in enumerate(framework.atoms):
-            if (atom.symbol == 'Br' or atom.symbol == 'Kr') and "edge_represent" in kwargs:       
+            if (
+                atom.symbol == 'Br' or atom.symbol == 'Kr'
+            ) and "edge_represent" in kwargs:
                 if atom.symbol == 'Br':
                     atom.symbol = ori_symbol_Br
                 elif atom.symbol == 'Kr':
                     atom.symbol = ori_symbol_Kr
-                symmetry_operations = spglib.get_symmetry_from_database(spacegroup_number)['rotations'], spglib.get_symmetry_from_database(spacegroup_number)['translations']
+                symmetry_operations = (
+                    spglib.get_symmetry_from_database(spacegroup_number)[
+                        'rotations'
+                    ],
+                    spglib.get_symmetry_from_database(spacegroup_number)[
+                        'translations'
+                    ],
+                )
                 atom_position = framework.atoms.get_scaled_positions()[i]
                 new_atom_symbol = 'Ne'
                 new_positions = []
                 for rotation, translation in zip(*symmetry_operations):
-                    new_frac_pos = (np.dot(rotation, atom_position) + translation)
+                    new_frac_pos = np.dot(rotation, atom_position) + translation
                     lattice_vectors = framework.atoms.cell
                     new_positions.append(np.dot(new_frac_pos, lattice_vectors))
                 for pos in new_positions:
                     atom = Atoms(new_atom_symbol, positions=[pos])
                     atom.tag = 42
                     framework.atoms += atom
-        framework.atoms.set_scaled_positions(framework.atoms.get_scaled_positions() % 1.0)
-        
-        # Store the minimum distance to Ne atoms in the min_array        
+        framework.atoms.set_scaled_positions(
+            framework.atoms.get_scaled_positions() % 1.0
+        )
+
+        # Store the minimum distance to Ne atoms in the min_array
         min_array = []
         if "edge_represent" in kwargs:
             for k in range(1, topology.n_edges + 1):
                 min_distance = float('inf')
                 for i in range(len(framework.atoms)):
-                    for j in range(i+1,len(framework.atoms)):
-                        if (framework.atoms[i].tag == k and framework.atoms[j].symbol == 'Ne') or (framework.atoms[i].symbol == 'Ne' and framework.atoms[j].tag == k):
-                            distance = framework.atoms.get_distance(i, j, mic = True)
+                    for j in range(i + 1, len(framework.atoms)):
+                        if (
+                            framework.atoms[i].tag == k
+                            and framework.atoms[j].symbol == 'Ne'
+                        ) or (
+                            framework.atoms[i].symbol == 'Ne'
+                            and framework.atoms[j].tag == k
+                        ):
+                            distance = framework.atoms.get_distance(
+                                i, j, mic=True
+                            )
                             if distance < min_distance:
                                 min_distance = distance
                 min_array.append(min_distance)
