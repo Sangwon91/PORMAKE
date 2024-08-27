@@ -24,7 +24,7 @@ current_node[0] = node_bb
 current_edge[(0, 0)] = edge_bb
 
 
-# edge에 None이 들어가는지 확인, 첫 edge가 None일 경우 처음으로 나오는 None이 아닌 edge를 starting_edge로 설정하고, edge_represnet 설정
+# edge에 None이 들어가는지 확인, 첫 edge가 None일 경우 처음으로 나오는 None이 아닌 edge를 starting_edge로 설정하고, edge_represent 설정
 
 for i, edge in enumerate(topo.edge_types):
     if tuple(edge.tolist()) in current_edge:
@@ -147,7 +147,7 @@ with open('./log.out', 'a') as f:
 extra = []
 with open('./log.out', 'a') as f:
     while max(min_array) > 1.0:
-        print("extra 추가", file=f, flush=True)
+        print("add extra", file=f, flush=True)
         extra.append(np.argmax(min_array))
         rotate_angle_list = [0] * topo.n_edges
         rotate_angle_list[starting_edge] = min_angle_list[starting_edge]
@@ -196,7 +196,7 @@ with open('./log.out', 'a') as f:
         print(min_angle_list, file=f, flush=True)
 
 
-# 최종 MOF 생성
+# Generating Final MOF Structure
 # spacegroup_vis=True로 할 경우 space group atom 보이게 cif 파일 생성 가능
 GUN1.write_cif(name + '_new_Pormake.cif', spacegroup_vis=False)
 
@@ -212,7 +212,7 @@ energy_per_atom = float(
 final_structure = relax_results['final_structure']
 final_structure.to(filename=name + '_new_Pormake_relax.cif')
 
-# 결과 파일 작성
+# Result file
 filename = name + 'output.json'
 data = {
     "angle_interval": edge_angle_interval,

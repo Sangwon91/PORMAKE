@@ -24,16 +24,16 @@ def rotate_edge(edge, angle_deg):
 
     """
     molecule = edge.atoms
-    axis_start = edge.connection_points[0]
-    axis_end = edge.connection_points[1]
+    axis_start = np.array(edge.connection_points[0])
+    axis_end = np.array(edge.connection_points[1])
     angle_rad = np.radians(angle_deg)
-    axis_vector = np.array(axis_end) - np.array(axis_start)
+    axis_vector = axis_end - axis_start
     axis_vector /= np.linalg.norm(axis_vector)
     rotation = R.from_rotvec(angle_rad * axis_vector)
     positions = molecule.get_positions()
-    translated_positions = positions - np.array(axis_start)
+    translated_positions = positions - axis_start
     rotated_positions = rotation.apply(translated_positions)
-    new_positions = rotated_positions + np.array(axis_start)
+    new_positions = rotated_positions + axis_start
     molecule.set_positions(new_positions)
 
 
@@ -421,20 +421,24 @@ class Builder:
             )
 
             located_edge.set_centroid(centroid)
-            # edge representer 설정
+
+            # Edge representer setting
+            # Change atom symbol to apply space group to edge representer atom at starting edge
+            if "edge_represent" in kwargs and i == starting_edge:
+                ori_symbol_Ar = located_edge.atoms[
+                    kwargs['edge_represent']
+                ].symbol
+                located_edge.atoms[kwargs['edge_represent']].symbol = 'Ar'
+                located_edge.atoms[kwargs['edge_represent']].tag = i + 1
+            # Set the tag on the edge represnter of the remaining edge as well
+            elif "edge_represent" in kwargs:
+                located_edge.atoms[kwargs['edge_represent']].tag = i + 1
+            # Use another atom symbol to apply the space group when the extra edge is added
             if "extra" in kwargs and i in kwargs['extra']:
                 ori_symbol_Kr = located_edge.atoms[
                     kwargs['edge_represent']
                 ].symbol
                 located_edge.atoms[kwargs['edge_represent']].symbol = 'Kr'
-                located_edge.atoms[kwargs['edge_represent']].tag = i + 1
-            if "edge_represent" in kwargs and i == starting_edge:
-                ori_symbol_Br = located_edge.atoms[
-                    kwargs['edge_represent']
-                ].symbol
-                located_edge.atoms[kwargs['edge_represent']].symbol = 'Br'
-                located_edge.atoms[kwargs['edge_represent']].tag = i + 1
-            elif "edge_represent" in kwargs:
                 located_edge.atoms[kwargs['edge_represent']].tag = i + 1
             located_bbs[e] = located_edge
 
@@ -585,10 +589,10 @@ class Builder:
         # Place Ne atoms for space group
         for i, atom in enumerate(framework.atoms):
             if (
-                atom.symbol == 'Br' or atom.symbol == 'Kr'
+                atom.symbol == 'Ar' or atom.symbol == 'Kr'
             ) and "edge_represent" in kwargs:
-                if atom.symbol == 'Br':
-                    atom.symbol = ori_symbol_Br
+                if atom.symbol == 'Ar':
+                    atom.symbol = ori_symbol_Ar
                 elif atom.symbol == 'Kr':
                     atom.symbol = ori_symbol_Kr
                 symmetry_operations = (
