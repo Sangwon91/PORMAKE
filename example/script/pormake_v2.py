@@ -24,13 +24,13 @@ current_node[0] = node_bb
 current_edge[(0, 0)] = edge_bb
 
 
-# edge에 None이 들어가는지 확인, 첫 edge가 None일 경우 처음으로 나오는 None이 아닌 edge를 starting_edge로 설정하고, edge_represent 설정
+# edge에 None이 들어가는지 확인, 첫 edge가 None일 경우 처음으로 나오는 None이 아닌 edge를 first_valid_edge_index로 설정하고, edge_representer 설정
 
 for i, edge in enumerate(topo.edge_types):
     if tuple(edge.tolist()) in current_edge:
         if current_edge[tuple(edge.tolist())] is not None:
-            starting_edge = i - topo.n_nodes
-            edge_represent = current_edge[
+            first_valid_edge_index = i - topo.n_nodes
+            edge_representer = current_edge[
                 tuple(edge.tolist())
             ].find_furthest_atom_index()
             break
@@ -43,7 +43,7 @@ for i, edge in enumerate(topo.edge_types):
         else:
             none_edge_list.append(0)
 
-print(starting_edge, none_edge_list, edge_represent)
+print(first_valid_edge_index, none_edge_list, edge_representer)
 
 # Original Pormake
 
@@ -51,8 +51,8 @@ GUN1, min_array = builder.build_by_type(
     topo,
     current_node,
     current_edge,
-    starting_edge=starting_edge,
-    edge_represent=edge_represent,
+    first_valid_edge_index=first_valid_edge_index,
+    edge_representer=edge_representer,
 )
 GUN1.write_cif(name + '_ori_Pormake.cif', spacegroup_vis=False)
 
@@ -72,32 +72,34 @@ a = time.time()
 
 with open('./log.out', 'a') as f:
     for i in range(0, 91, first_edge_angle_interval):
-        rotate_angle_list = [0] * topo.n_edges
-        rotate_angle_list[starting_edge] = i
+        rotating_angle_list = [0] * topo.n_edges
+        rotating_angle_list[first_valid_edge_index] = i
         min_angle_list = [0] * topo.n_edges
-        min_angle_list[starting_edge] = i
+        min_angle_list[first_valid_edge_index] = i
         min_error = [100] * topo.n_edges
-        min_error[starting_edge] = 0
+        min_error[first_valid_edge_index] = 0
         for e in range(0, topo.n_edges):
             if none_edge_list[e] == 1:
                 min_error[e] = 0
         for j in range(0, 180, edge_angle_interval):
-            rotate_angle_list = [j] * topo.n_edges
-            rotate_angle_list[starting_edge] = i
+            rotating_angle_list = [j] * topo.n_edges
+            rotating_angle_list[first_valid_edge_index] = i
             GUN1, min_array = builder.build_by_type(
                 topo,
                 current_node,
                 current_edge,
-                starting_edge=starting_edge,
-                rotate_angle_list=rotate_angle_list,
-                edge_represent=edge_represent,
+                first_valid_edge_index=first_valid_edge_index,
+                rotating_angle_list=rotating_angle_list,
+                edge_representer=edge_representer,
             )
-            for k in [x for x in range(0, topo.n_edges) if x != starting_edge]:
+            for k in [
+                x for x in range(0, topo.n_edges) if x != first_valid_edge_index
+            ]:
                 if min_array[k] < min_error[k]:  # update
                     min_error[k] = min_array[k]
                     min_angle_list[k] = j
             print(i, j, file=f, flush=True)
-            # print(rotate_angle_list, file = f, flush = True)
+            # print(rotating_angle_list, file = f, flush = True)
             # print(min_array, file = f, flush = True)
             print(min_error, file=f, flush=True)
             print(min_angle_list, file=f, flush=True)
@@ -107,9 +109,9 @@ with open('./log.out', 'a') as f:
             topo,
             current_node,
             current_edge,
-            starting_edge=starting_edge,
-            rotate_angle_list=min_angle_list,
-            edge_represent=edge_represent,
+            first_valid_edge_index=first_valid_edge_index,
+            rotating_angle_list=min_angle_list,
+            edge_representer=edge_representer,
         )
 
         ase_atoms = GUN1.atoms
@@ -135,9 +137,9 @@ with open('./log.out', 'a') as f:
         topo,
         current_node,
         current_edge,
-        starting_edge=starting_edge,
-        rotate_angle_list=min_angle_list,
-        edge_represent=edge_represent,
+        first_valid_edge_index=first_valid_edge_index,
+        rotating_angle_list=min_angle_list,
+        edge_representer=edge_representer,
     )
     print(min_array, file=f, flush=True)
     print(min_angle_list, file=f, flush=True)
@@ -149,13 +151,15 @@ with open('./log.out', 'a') as f:
     while max(min_array) > 1.0:
         print("add extra", file=f, flush=True)
         extra.append(np.argmax(min_array))
-        rotate_angle_list = [0] * topo.n_edges
-        rotate_angle_list[starting_edge] = min_angle_list[starting_edge]
+        rotating_angle_list = [0] * topo.n_edges
+        rotating_angle_list[first_valid_edge_index] = min_angle_list[
+            first_valid_edge_index
+        ]
         for ex in extra:
-            rotate_angle_list[ex] = min_angle_list[ex]
-        min_angle_list = copy.deepcopy(rotate_angle_list)
+            rotating_angle_list[ex] = min_angle_list[ex]
+        min_angle_list = copy.deepcopy(rotating_angle_list)
         min_error = [100] * topo.n_edges
-        min_error[starting_edge] = 0
+        min_error[first_valid_edge_index] = 0
         for ex in extra:
             min_error[ex] = 0
         for e in range(0, topo.n_edges):
@@ -163,15 +167,15 @@ with open('./log.out', 'a') as f:
                 min_error[e] = 0
         for j in range(0, 180, edge_angle_interval):
             for i in range(0, topo.n_edges):
-                if i not in extra and i != starting_edge:
-                    rotate_angle_list[i] = j
+                if i not in extra and i != first_valid_edge_index:
+                    rotating_angle_list[i] = j
             GUN1, min_array = builder.build_by_type(
                 topo,
                 current_node,
                 current_edge,
-                starting_edge=starting_edge,
-                rotate_angle_list=rotate_angle_list,
-                edge_represent=edge_represent,
+                first_valid_edge_index=first_valid_edge_index,
+                rotating_angle_list=rotating_angle_list,
+                edge_representer=edge_representer,
                 extra=extra,
             )
             for k in range(0, topo.n_edges):
@@ -187,9 +191,9 @@ with open('./log.out', 'a') as f:
             topo,
             current_node,
             current_edge,
-            starting_edge=starting_edge,
-            rotate_angle_list=min_angle_list,
-            edge_represent=edge_represent,
+            first_valid_edge_index=first_valid_edge_index,
+            rotating_angle_list=min_angle_list,
+            edge_representer=edge_representer,
             extra=extra,
         )
         print(min_array, file=f, flush=True)

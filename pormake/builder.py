@@ -88,12 +88,19 @@ class Builder:
         return bbs
 
     def build_by_type(
-        self, topology, node_bbs, edge_bbs=None, starting_edge=0, **kwargs
+        self,
+        topology,
+        node_bbs,
+        edge_bbs=None,
+        first_valid_edge_index=0,
+        **kwargs,
     ):
         bbs = self.make_bbs_by_type(topology, node_bbs, edge_bbs)
-        return self.build(topology, bbs, starting_edge, **kwargs)
+        return self.build(topology, bbs, first_valid_edge_index, **kwargs)
 
-    def build(self, topology, bbs, starting_edge, permutations=None, **kwargs):
+    def build(
+        self, topology, bbs, first_valid_edge_index, permutations=None, **kwargs
+    ):
         """
         The node_bbs must be given with proper order.
         Same as node type order in topology.
@@ -390,10 +397,10 @@ class Builder:
                 none_edge_list.append(1)
                 continue
             none_edge_list.append(0)
-            if "rotate_angle_list" in kwargs:
+            if "rotating_angle_list" in kwargs:
                 for j in range(topology.n_edges):
                     if i == j:
-                        rotate_edge(edge_bb, kwargs['rotate_angle_list'][j])
+                        rotate_edge(edge_bb, kwargs['rotating_angle_list'][j])
 
             n1, n2 = topology.neighbor_list[e]
 
@@ -424,22 +431,22 @@ class Builder:
 
             # Edge representer setting
             # Change atom symbol to apply space group to edge representer atom at starting edge
-            if "edge_represent" in kwargs and i == starting_edge:
+            if "edge_representer" in kwargs and i == first_valid_edge_index:
                 ori_symbol_Ar = located_edge.atoms[
-                    kwargs['edge_represent']
+                    kwargs['edge_representer']
                 ].symbol
-                located_edge.atoms[kwargs['edge_represent']].symbol = 'Ar'
-                located_edge.atoms[kwargs['edge_represent']].tag = i + 1
+                located_edge.atoms[kwargs['edge_representer']].symbol = 'Ar'
+                located_edge.atoms[kwargs['edge_representer']].tag = i + 1
             # Set the tag on the edge represnter of the remaining edge as well
-            elif "edge_represent" in kwargs:
-                located_edge.atoms[kwargs['edge_represent']].tag = i + 1
+            elif "edge_representer" in kwargs:
+                located_edge.atoms[kwargs['edge_representer']].tag = i + 1
             # Use another atom symbol to apply the space group when the extra edge is added
             if "extra" in kwargs and i in kwargs['extra']:
                 ori_symbol_Kr = located_edge.atoms[
-                    kwargs['edge_represent']
+                    kwargs['edge_representer']
                 ].symbol
-                located_edge.atoms[kwargs['edge_represent']].symbol = 'Kr'
-                located_edge.atoms[kwargs['edge_represent']].tag = i + 1
+                located_edge.atoms[kwargs['edge_representer']].symbol = 'Kr'
+                located_edge.atoms[kwargs['edge_representer']].tag = i + 1
             located_bbs[e] = located_edge
 
             logger.debug(f"Edge {e}, RMSD: {rmsd:.2E}")
@@ -590,7 +597,7 @@ class Builder:
         for i, atom in enumerate(framework.atoms):
             if (
                 atom.symbol == 'Ar' or atom.symbol == 'Kr'
-            ) and "edge_represent" in kwargs:
+            ) and "edge_representer" in kwargs:
                 if atom.symbol == 'Ar':
                     atom.symbol = ori_symbol_Ar
                 elif atom.symbol == 'Kr':
@@ -620,7 +627,7 @@ class Builder:
 
         # Store the minimum distance to Ne atoms in the min_array
         min_array = []
-        if "edge_represent" in kwargs:
+        if "edge_representer" in kwargs:
             for k in range(1, topology.n_edges + 1):
                 min_distance = float('inf')
                 for i in range(len(framework.atoms)):
