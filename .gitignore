@@ -8,3 +8,5 @@ test*
 *.pickle
 *.log
 .ipynb_checkpoints
+
+working_area/
