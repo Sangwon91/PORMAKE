@@ -645,7 +645,10 @@ class Builder:
                             if distance < min_distance:
                                 min_distance = distance
                 min_array.append(min_distance)
-        for i, n in enumerate(none_edge_list):
-            if n == 1:
-                min_array[i] = 0
-        return framework, min_array
+            for i, n in enumerate(none_edge_list):
+                if n == 1:
+                    min_array[i] = 0
+
+        framework.min_array = min_array
+
+        return framework

@@ -47,7 +47,7 @@ print(first_valid_edge_index, none_edge_list, edge_representer)
 
 # Original Pormake
 
-GUN1, min_array = builder.build_by_type(
+GUN1 = builder.build_by_type(
     topo,
     current_node,
     current_edge,
@@ -84,7 +84,7 @@ with open('./log.out', 'a') as f:
         for j in range(0, 180, edge_angle_interval):
             rotating_angle_list = [j] * topo.n_edges
             rotating_angle_list[first_valid_edge_index] = i
-            GUN1, min_array = builder.build_by_type(
+            GUN1 = builder.build_by_type(
                 topo,
                 current_node,
                 current_edge,
@@ -95,17 +95,24 @@ with open('./log.out', 'a') as f:
             for k in [
                 x for x in range(0, topo.n_edges) if x != first_valid_edge_index
             ]:
-                if min_array[k] < min_error[k]:  # update
-                    min_error[k] = min_array[k]
+                if GUN1.min_array[k] < min_error[k]:  # update
+                    min_error[k] = GUN1.min_array[k]
                     min_angle_list[k] = j
-            print(i, j, file=f, flush=True)
+            print(
+                f'first edge angle: {i}, remain edge angle: {j}',
+                file=f,
+                flush=True,
+            )
             # print(rotating_angle_list, file = f, flush = True)
-            # print(min_array, file = f, flush = True)
-            print(min_error, file=f, flush=True)
-            print(min_angle_list, file=f, flush=True)
+            # print(GUN1.min_array, file = f, flush = True)
+            print(
+                f'angle: {min_angle_list}\nerror: {min_error}',
+                file=f,
+                flush=True,
+            )
             if all(value < threshold for value in min_error):
                 break
-        GUN1, min_array = builder.build_by_type(
+        GUN1 = builder.build_by_type(
             topo,
             current_node,
             current_edge,
@@ -133,7 +140,7 @@ with open('./log.out', 'a') as f:
 
     min_angle_list = min_angle_list_list[np.argmin(energy_per_atom_list)]
 
-    GUN1, min_array = builder.build_by_type(
+    GUN1 = builder.build_by_type(
         topo,
         current_node,
         current_edge,
@@ -141,16 +148,19 @@ with open('./log.out', 'a') as f:
         rotating_angle_list=min_angle_list,
         edge_representer=edge_representer,
     )
-    print(min_array, file=f, flush=True)
-    print(min_angle_list, file=f, flush=True)
+    print(
+        f'Final angle: {min_angle_list}\nFinal error: {GUN1.min_array}',
+        file=f,
+        flush=True,
+    )
 
 # 기준점 여러개일 경우 extra 기준점 추가하기
 
 extra = []
 with open('./log.out', 'a') as f:
-    while max(min_array) > 1.0:
-        print("add extra", file=f, flush=True)
-        extra.append(np.argmax(min_array))
+    while max(GUN1.min_array) > 1.0:
+        print("add extra edge", file=f, flush=True)
+        extra.append(np.argmax(GUN1.min_array))
         rotating_angle_list = [0] * topo.n_edges
         rotating_angle_list[first_valid_edge_index] = min_angle_list[
             first_valid_edge_index
@@ -169,7 +179,7 @@ with open('./log.out', 'a') as f:
             for i in range(0, topo.n_edges):
                 if i not in extra and i != first_valid_edge_index:
                     rotating_angle_list[i] = j
-            GUN1, min_array = builder.build_by_type(
+            GUN1 = builder.build_by_type(
                 topo,
                 current_node,
                 current_edge,
@@ -179,15 +189,18 @@ with open('./log.out', 'a') as f:
                 extra=extra,
             )
             for k in range(0, topo.n_edges):
-                if min_array[k] < min_error[k]:  # update
-                    min_error[k] = min_array[k]
+                if GUN1.min_array[k] < min_error[k]:  # update
+                    min_error[k] = GUN1.min_array[k]
                     min_angle_list[k] = j
-            print(min_error, file=f, flush=True)
-            print(min_angle_list, file=f, flush=True)
+            print(
+                f'angle: {min_angle_list}\nerror: {min_error}',
+                file=f,
+                flush=True,
+            )
             if all(value < threshold for value in min_error):
                 break
 
-        GUN1, min_array = builder.build_by_type(
+        GUN1 = builder.build_by_type(
             topo,
             current_node,
             current_edge,
@@ -196,9 +209,13 @@ with open('./log.out', 'a') as f:
             edge_representer=edge_representer,
             extra=extra,
         )
-        print(min_array, file=f, flush=True)
-        print(min_angle_list, file=f, flush=True)
+        print(
+            f'Final angle(extra): {min_angle_list}\nFinal error(extra): {GUN1.min_array}',
+            file=f,
+            flush=True,
+        )
 
+    print('Done', file=f, flush=True)
 
 # Generating Final MOF Structure
 # spacegroup_vis=True로 할 경우 space group atom 보이게 cif 파일 생성 가능
@@ -216,13 +233,16 @@ energy_per_atom = float(
 final_structure = relax_results['final_structure']
 final_structure.to(filename=name + '_new_Pormake_relax.cif')
 
+c = time.time()
+
 # Result file
 filename = name + 'output.json'
 data = {
     "angle_interval": edge_angle_interval,
     "threshold": threshold,
     "time": b - a,
-    "min_array": min_array,
+    "relaxation time": c - b,
+    "min_array": GUN1.min_array,
     "min_angle": min_angle_list,
     "energy_per_atom": energy_per_atom,
 }
