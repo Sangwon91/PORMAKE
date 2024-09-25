@@ -19,7 +19,7 @@ class Framework:
         self.bonds = bonds.copy()
         self.bond_types = copy.deepcopy(bond_types)
         self.info = copy.deepcopy(info)
-        self.min_array = []
+        self.min_array = None
 
         if wrap:
             self.wrap()
