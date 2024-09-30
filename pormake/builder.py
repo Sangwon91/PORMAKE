@@ -397,10 +397,9 @@ class Builder:
                 none_edge_list.append(1)
                 continue
             none_edge_list.append(0)
-            if "rotating_angle_list" in kwargs:
-                for j in range(topology.n_edges):
-                    if i == j:
-                        rotate_edge(edge_bb, kwargs['rotating_angle_list'][j])
+
+            # if "rotating_angle_list" in kwargs:
+            #     rotate_edge(edge_bb, kwargs['rotating_angle_list'][i])
 
             n1, n2 = topology.neighbor_list[e]
 
@@ -426,6 +425,9 @@ class Builder:
             located_edge, rmsd = locator.locate_with_permutation(
                 target, edge_bb, perm
             )
+
+            if "rotating_angle_list" in kwargs:
+                rotate_edge(located_edge, kwargs['rotating_angle_list'][i])
 
             located_edge.set_centroid(centroid)
 
