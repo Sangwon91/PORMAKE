@@ -3,14 +3,14 @@ import json
 import time
 
 import numpy as np
-from m3gnet.models import Relaxer
+from m3gnet.models import M3GNet, M3GNetCalculator, Potential, Relaxer
 from pymatgen.core import Element, Structure
 
 import pormake as pm
 
 # original Pormake setting
 
-name = "mof_name"
+name = "name"
 database = pm.Database()
 edge_bb = database.get_bb("E14")
 topo = database.get_topo("pcu")
@@ -54,18 +54,22 @@ GUN = builder.build_by_type(
     first_valid_edge_index=first_valid_edge_index,
     edge_representer=edge_representer,
 )
-GUN.write_cif(name + '_ori_Pormake.cif', spacegroup_vis=False)
+GUN.write_cif(name + '_PORMAKE.cif', spacegroup_vis=False)
 
 # initialization
 # edge_angle_interval = 1, 3, 5, 10
 # first_edge_angle_interval = 15, 30, 45
 # threshold < 0.5
 
-edge_angle_interval = 5
+edge_angle_interval = 10
 first_edge_angle_interval = 30
 threshold = 0.3
 energy_per_atom_list = []
 min_angle_list_list = []
+relaxer = Relaxer()
+m3gnet_model = M3GNet()
+potential = Potential(model=m3gnet_model)
+calculator = M3GNetCalculator(potential=potential)
 
 # edge 회전해서 space group에 맞게 edge 들어가도록 조정
 a = time.time()
@@ -103,8 +107,6 @@ with open('./log.out', 'a') as f:
                 file=f,
                 flush=True,
             )
-            # print(rotating_angle_list, file = f, flush = True)
-            # print(GUN.min_array, file = f, flush = True)
             print(
                 f'angle: {min_angle_list}\nerror: {min_error}',
                 file=f,
@@ -125,21 +127,20 @@ with open('./log.out', 'a') as f:
         lattice = ase_atoms.cell.array
         filtered_positions = []
         filtered_species = []
-        relaxer = Relaxer()
         for atom in ase_atoms:
             if atom.symbol != 'Ne':
                 filtered_positions.append(atom.position)
                 filtered_species.append(Element(atom.symbol))
         pmg_structure = Structure(lattice, filtered_species, filtered_positions)
-        relax_results = relaxer.relax(pmg_structure, steps=1)
+        calculator.calculate(pmg_structure)
         energy_per_atom = float(
-            relax_results['trajectory'].energies[-1] / len(pmg_structure)
+            calculator.results["energy"] / len(pmg_structure)
         )
         energy_per_atom_list.append(energy_per_atom)
         min_angle_list_list.append(min_angle_list)
 
         print(
-            f'First angle {i} is done. Energy per atom is {energy_per_atom}',
+            f'*First angle {i} is done. Energy per atom is {energy_per_atom}',
             file=f,
             flush=True,
         )
@@ -225,24 +226,23 @@ with open('./log.out', 'a') as f:
 
 # Generating Final MOF Structure
 # spacegroup_vis=True로 할 경우 space group atom 보이게 cif 파일 생성 가능
-GUN.write_cif(name + '_new_Pormake.cif', spacegroup_vis=False)
+GUN.write_cif(name + '_PORMAKE_v2.cif', spacegroup_vis=False)
 
 b = time.time()
 
 # relaxation
-pmg_structure = Structure.from_file(name + '_new_Pormake.cif')
-relaxer = Relaxer()
-relax_results = relaxer.relax(pmg_structure, steps=100000, fmax=0.05)
+pmg_structure = Structure.from_file(name + '_PORMAKE_v2.cif')
+relax_results = relaxer.relax(pmg_structure, steps=10000, fmax=0.05)
 energy_per_atom = float(
     relax_results['trajectory'].energies[-1] / len(pmg_structure)
 )
 final_structure = relax_results['final_structure']
-final_structure.to(filename=name + '_new_Pormake_relax.cif')
+final_structure.to(filename=name + '_PORMAKE_v2_relax.cif')
 
 c = time.time()
 
 # Result file
-filename = name + 'output.json'
+filename = name + '_output.json'
 data = {
     "angle_interval": edge_angle_interval,
     "threshold": threshold,
