@@ -5,21 +5,30 @@
 >
 > [Please cite me if you find it useful!](https://pubs.acs.org/doi/abs/10.1021/acsami.1c02471)
 
-Development Roadmap (updated 2023.08.01):
+Development Roadmap (updated 2024.12.20):
+1. Change of project management tool: `poetry` to `uv`
+1. Simple web application for the generation of porous materials
 1. Enrich the code with descriptive docstrings.
-2. Fortify the project by implementing comprehensive test code.
-3. Development of an enhanced algorithm for improved placement of edge building blocks (considering symmetry).
+1. Fortify the project by implementing comprehensive test code.
+1. Development of an enhanced algorithm for improved placement of edge building blocks (considering symmetry).
 
 ## Release Note
-Version: `0.2.1`
+#### New fork
+[Repository URL](https://github.com/geonho42/PORMAKE/tree/dev/pormake)
+
+This fork attempted to solve an issue in PORMAKE where, when generating Porous materials, linkers would be inserted with random rotation around the axis formed by two connection points. For those who need this functionality, please refer to the [README](https://github.com/geonho42/PORMAKE/tree/dev/example/script/pormake_v2) of this fork.
+
+Thank you for your valuable contribution @geonho42 !
+
+#### Version: `0.2.1`
 
 **New feature added**: Building blocks with partial charge
 
 The example can be found in [here](./example/notebook/test_charged.py). 
 
-Thank you for your valuable contribution [aniruddha-seal](https://github.com/aniruddha-seal)!
+Thank you for your valuable contribution @aniruddha-seal !
 
-Version: `0.2.0`
+#### Version: `0.2.0`
 
 **New feature added**: A module for extracting building blocks from MOFs
 
