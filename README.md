@@ -528,3 +528,23 @@ You can load building block using `BuilingBlock` object like below:
 ```python
 bb = pm.BuildingBlock('N10.xyz')
 ```
+
+## Contributions
+This project is managed through [`uv`](https://docs.astral.sh/uv/). It is strongly recommended to use `uv` for development. Additionally, support for Python versions below `3.10` will be discontinued in the future, so it is recommended to use Python `3.10` or higher. Below are examples of commands used when developing with `uv`.
+
+### 1. Install required libraries
+```bash
+git clone [this repository]
+cd [this repository]
+uv sync
+```
+
+### 2. Apply pre-commit before commit
+```bash
+uvx pre-commit
+```
+
+### 3. Install new libraries for new functionalities
+```bash
+uv add [library name]
+```
