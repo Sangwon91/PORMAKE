@@ -1,35 +1,26 @@
-[tool.poetry]
+[project]
 name = "pormake"
 version = "0.2.2"
 description = "Python library for the construction of porous materials using topology and building blocks"
-authors = ["Sangwon Lee <lsw91.main@gmail.com>"]
 license = "MIT"
 readme = "README.md"
-repository = "https://github.com/Sangwon91/PORMAKE"
+# repository = "https://github.com/Sangwon91/PORMAKE"
+authors = [
+    { name = "Sangwon Lee", email = "lsw91.main@gmail.com" }
+]
 classifiers = [
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10"
 ]
-packages = [
-    { include = "pormake" }
+requires-python = ">=3.10"
+dependencies = [
+    "ase>=3.23.0",
+    "jax[cpu]>=0.4.13",
+    "networkx>=3.1",
+    "pymatgen>=2023.8.10",
 ]
 
-[tool.poetry.dependencies]
-python = "^3.8"
-pymatgen = "^2023.8.10"
-ase = "^3.22.1"
-jax = {extras = ["cpu"], version = "^0.4.1"}
-networkx = "^3.1"
-
-
-[tool.poetry.group.dev.dependencies]
-ipykernel = "^6.19.4"
-ipywidgets = "^7.6.0"
-nglview = "^3.0.3"
-pre-commit = "^3.3.3"
-notebook = "^7.0.4"
-
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
