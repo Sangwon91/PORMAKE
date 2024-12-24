@@ -1,19 +1,18 @@
+import copy
+import functools
 import os
 import sys
-import copy
 import traceback
-import functools
 from pathlib import Path
-
-import numpy as np
 
 import ase
 import ase.visualize
+import numpy as np
 
-from .log import logger
-from .utils import read_cgd
 from .local_structure import LocalStructure
-from .neighbor_list import Neighbor, NeighborList
+from .log import logger
+from .neighbor_list import NeighborList
+from .utils import read_cgd
 
 
 class Topology:
@@ -37,13 +36,10 @@ class Topology:
                 "{}: Distance based parsing fails.. "
                 "Try nearest two method.".format(self.name)
             )
-            self.neighbor_list = \
-                NeighborList(self.atoms, method="nearest")
+            self.neighbor_list = NeighborList(self.atoms, method="nearest")
 
         if not self.check_validity():
-            logger.error(
-                "Topology parsing fails: {}".format(self.name)
-            )
+            logger.error("Topology parsing fails: {}".format(self.name))
             raise Exception("Invalid cgd file: {}".format(self.name))
         else:
             logger.debug(
@@ -84,10 +80,8 @@ class Topology:
 
     def calculate_properties(self):
         # Build indices of nodes and edges.
-        self._node_indices = \
-            np.argwhere(self.atoms.get_tags() >= 0).reshape(-1)
-        self._edge_indices = \
-            np.argwhere(self.atoms.get_tags() < 0).reshape(-1)
+        self._node_indices = np.argwhere(self.atoms.get_tags() >= 0).reshape(-1)
+        self._edge_indices = np.argwhere(self.atoms.get_tags() < 0).reshape(-1)
 
         # Build node type.
         self._node_types = self.atoms.get_tags()
@@ -118,8 +112,8 @@ class Topology:
             self.edge_types[self.edge_indices], axis=0
         ).shape[0]
 
-        #self.cn = np.array([len(n) for n in self.neighbor_list])
-        #self.cn = self.cn[self.node_indices]
+        # self.cn = np.array([len(n) for n in self.neighbor_list])
+        # self.cn = self.cn[self.node_indices]
         self.cn = self.atoms.info["cn"]
         self.unique_cn = []
         types = np.unique(self.node_types[self.node_indices])
@@ -136,10 +130,8 @@ class Topology:
             positions.append(n.distance_vector)
 
         return LocalStructure(
-                   positions,
-                   indices,
-                   normalization_func=self.local_structure_func
-               )
+            positions, indices, normalization_func=self.local_structure_func
+        )
 
     def get_node_type(self, i):
         return self._node_types[i]
@@ -227,7 +219,7 @@ class Topology:
 
         # Expand cell for the visualization.
         s = atoms.get_scaled_positions()
-        atoms.set_cell(atoms.cell*scale)
+        atoms.set_cell(atoms.cell * scale)
         atoms.set_positions(s @ atoms.cell)
 
         ase.visualize.view(atoms, *args, **kwargs)
@@ -258,6 +250,7 @@ class Topology:
             else:
                 self._write_cif_without_edge_atoms(path, *args, **kwargs)
         except Exception as e:
+            logger.exception(e)
             logger.error(
                 "CIF writing fails with error: %s",
                 traceback.format_exc(),
@@ -267,7 +260,7 @@ class Topology:
             os.remove(str(path))
 
     def _write_cif_with_edge_atoms(self, path, scale=1.0):
-        stem = path.stem.replace(" ", "_")
+        # stem = path.stem.replace(" ", "_")
 
         with path.open("w") as f:
             # Write information comments.
@@ -284,12 +277,18 @@ class Topology:
             f.write("_symmetry_equiv_pos_as_xyz\n")
             f.write("'x, y, z'\n")
 
-            a, b, c, alpha, beta, gamma = \
-                self.atoms.get_cell_lengths_and_angles()
+            (
+                a,
+                b,
+                c,
+                alpha,
+                beta,
+                gamma,
+            ) = self.atoms.get_cell_lengths_and_angles()
 
-            f.write("_cell_length_a     {:.3f}\n".format(a*scale))
-            f.write("_cell_length_b     {:.3f}\n".format(b*scale))
-            f.write("_cell_length_c     {:.3f}\n".format(c*scale))
+            f.write("_cell_length_a     {:.3f}\n".format(a * scale))
+            f.write("_cell_length_b     {:.3f}\n".format(b * scale))
+            f.write("_cell_length_c     {:.3f}\n".format(c * scale))
             f.write("_cell_angle_alpha  {:.3f}\n".format(alpha))
             f.write("_cell_angle_beta   {:.3f}\n".format(beta))
             f.write("_cell_angle_gamma  {:.3f}\n".format(gamma))
@@ -303,9 +302,9 @@ class Topology:
             f.write("_atom_type_partial_charge\n")
 
             def tag2symbol(tag):
-                ## 57: atomic number of the first lanthanide element.
+                # 57: atomic number of the first lanthanide element.
                 # 7: Nitrogen.
-                return ase.Atom(tag+7).symbol
+                return ase.Atom(tag + 7).symbol
 
             def tags2symbols(tags):
                 return [tag2symbol(tag) for tag in tags]
@@ -315,19 +314,20 @@ class Topology:
             frac_coords = self.atoms.get_scaled_positions()
             for i, (sym, pos) in enumerate(zip(symbols, frac_coords)):
                 label = "{}{}".format(sym, i)
-                f.write("{} {} {:.5f} {:.5f} {:.5f} 0.0\n".
-                        format(label, sym, *pos))
+                f.write(
+                    "{} {} {:.5f} {:.5f} {:.5f} 0.0\n".format(label, sym, *pos)
+                )
 
             f.write("loop_\n")
             f.write("_geom_bond_atom_site_label_1\n")
             f.write("_geom_bond_atom_site_label_2\n")
             f.write("_geom_bond_distance\n")
             f.write("_geom_bond_site_symmetry_2\n")
-            f.write("_ccdc_geom_bond_type\n") # ?????????
+            f.write("_ccdc_geom_bond_type\n")  # ?????????
 
             origin = np.array([5, 5, 5])
 
-            eps = 1e-3
+            # eps = 1e-3
             invcell = np.linalg.inv(self.atoms.get_cell())
             bond_info = []
             for i in self.node_indices:
@@ -339,7 +339,7 @@ class Topology:
                     ri = self.atoms[i].position
                     rij = rj - ri
 
-                    image = np.dot(d-rij, invcell)
+                    image = np.dot(d - rij, invcell)
                     image = np.around(image).astype(np.int32)
 
                     distance = np.linalg.norm(d)
@@ -359,16 +359,20 @@ class Topology:
                 distance *= scale
 
                 if (image == origin).all():
-                    f.write("{} {} {:.3f} . {}\n".
-                        format(label_i, label_j, distance, bond_type)
+                    f.write(
+                        "{} {} {:.3f} . {}\n".format(
+                            label_i, label_j, distance, bond_type
+                        )
                     )
                 else:
-                    f.write("{} {} {:.3f} 1_{}{}{} {}\n".
-                        format(label_i, label_j, distance, *image, bond_type)
+                    f.write(
+                        "{} {} {:.3f} 1_{}{}{} {}\n".format(
+                            label_i, label_j, distance, *image, bond_type
+                        )
                     )
 
     def _write_cif_without_edge_atoms(self, path, scale=1.0):
-        stem = path.stem.replace(" ", "_")
+        # stem = path.stem.replace(" ", "_")
 
         with path.open("w") as f:
             # Write information comments.
@@ -385,12 +389,18 @@ class Topology:
             f.write("_symmetry_equiv_pos_as_xyz\n")
             f.write("'x, y, z'\n")
 
-            a, b, c, alpha, beta, gamma = \
-                self.atoms.get_cell_lengths_and_angles()
+            (
+                a,
+                b,
+                c,
+                alpha,
+                beta,
+                gamma,
+            ) = self.atoms.get_cell_lengths_and_angles()
 
-            f.write("_cell_length_a     {:.3f}\n".format(a*scale))
-            f.write("_cell_length_b     {:.3f}\n".format(b*scale))
-            f.write("_cell_length_c     {:.3f}\n".format(c*scale))
+            f.write("_cell_length_a     {:.3f}\n".format(a * scale))
+            f.write("_cell_length_b     {:.3f}\n".format(b * scale))
+            f.write("_cell_length_c     {:.3f}\n".format(c * scale))
             f.write("_cell_angle_alpha  {:.3f}\n".format(alpha))
             f.write("_cell_angle_beta   {:.3f}\n".format(beta))
             f.write("_cell_angle_gamma  {:.3f}\n".format(gamma))
@@ -404,9 +414,9 @@ class Topology:
             f.write("_atom_type_partial_charge\n")
 
             def tag2symbol(tag):
-                ## 57: atomic number of the first lanthanide element.
+                # 57: atomic number of the first lanthanide element.
                 # 7: Nitrogen.
-                return ase.Atom(tag+7).symbol
+                return ase.Atom(tag + 7).symbol
 
             def tags2symbols(tags):
                 return [tag2symbol(tag) for tag in tags]
@@ -417,15 +427,16 @@ class Topology:
             frac_coords = self.atoms.get_scaled_positions()[node_indices]
             for i, (sym, pos) in enumerate(zip(symbols, frac_coords)):
                 label = "{}{}".format(sym, i)
-                f.write("{} {} {:.5f} {:.5f} {:.5f} 0.0\n".
-                        format(label, sym, *pos))
+                f.write(
+                    "{} {} {:.5f} {:.5f} {:.5f} 0.0\n".format(label, sym, *pos)
+                )
 
             f.write("loop_\n")
             f.write("_geom_bond_atom_site_label_1\n")
             f.write("_geom_bond_atom_site_label_2\n")
             f.write("_geom_bond_distance\n")
             f.write("_geom_bond_site_symmetry_2\n")
-            f.write("_ccdc_geom_bond_type\n") # ?????????
+            f.write("_ccdc_geom_bond_type\n")  # ?????????
 
             origin = np.array([5, 5, 5])
 
@@ -455,10 +466,10 @@ class Topology:
                     ri = self.atoms[i].position
                     rij = rj - ri
 
-                    image = np.dot(2*d-rij, invcell)
+                    image = np.dot(2 * d - rij, invcell)
                     image = np.around(image).astype(np.int32)
 
-                    distance = np.linalg.norm(2*d)
+                    distance = np.linalg.norm(2 * d)
 
                     bond_info.append((i, j, image, distance))
 
@@ -475,12 +486,16 @@ class Topology:
                 distance *= scale
 
                 if (image == origin).all():
-                    f.write("{} {} {:.3f} . {}\n".
-                        format(label_i, label_j, distance, bond_type)
+                    f.write(
+                        "{} {} {:.3f} . {}\n".format(
+                            label_i, label_j, distance, bond_type
+                        )
                     )
                 else:
-                    f.write("{} {} {:.3f} 1_{}{}{} {}\n".
-                        format(label_i, label_j, distance, *image, bond_type)
+                    f.write(
+                        "{} {} {:.3f} 1_{}{}{} {}\n".format(
+                            label_i, label_j, distance, *image, bond_type
+                        )
                     )
 
     def __mul__(self, m):
@@ -491,7 +506,7 @@ class Topology:
 
         tag2cn = {tag: cn for tag, cn in zip(old_tags, old_cn)}
 
-        n = len(atoms)
+        # n = len(atoms)
 
         atoms = atoms * m
 
@@ -507,11 +522,9 @@ class Topology:
     def __rmul__(self, m):
         return self * m
 
-    def describe(self,
-                 symmetry_edge_type=False,
-                 slot_info=False,
-                 file=sys.stdout):
-
+    def describe(
+        self, symmetry_edge_type=False, slot_info=False, file=sys.stdout
+    ):
         def comma_numbers(nums):
             return ", ".join([str(n) for n in nums])
 
@@ -530,21 +543,22 @@ class Topology:
         # Alias for print function.
         p = functools.partial(print, file=file)
 
-        p("="*79)
+        p("=" * 79)
         p("Topology %s" % self.name)
         p("Spacegroup: %s" % self.spacegroup)
-        p("-"*79)
+        p("-" * 79)
 
-        p("# of slots: %d (%d nodes, %d edges)"
-          % (self.n_slots, self.n_nodes, self.n_edges)
+        p(
+            "# of slots: %d (%d nodes, %d edges)"
+            % (self.n_slots, self.n_nodes, self.n_edges)
         )
         p("# of node types: %d" % self.n_node_types)
         p("# of edge types: %d" % self.n_edge_types)
         p("")
 
-        p("-"*79)
+        p("-" * 79)
         p("Node type information")
-        p("-"*79)
+        p("-" * 79)
         for t, cn in zip(self.unique_node_types, self.unique_cn):
             p("Node type: %d, CN: %d" % (t, cn))
             indices = np.argwhere(self.node_types == t).reshape(-1).tolist()
@@ -554,9 +568,9 @@ class Topology:
                 p("                %s" % comma_numbers(indices))
         p("")
 
-        p("-"*79)
+        p("-" * 79)
         p("Edge type information (adjacent node types) ")
-        p("-"*79)
+        p("-" * 79)
         for t in self.unique_edge_types:
             p("Edge type: (%d, %d)" % (*t,))
             condition = self.edge_types == t
@@ -569,9 +583,9 @@ class Topology:
 
         if symmetry_edge_type:
             p("")
-            p("-"*79)
+            p("-" * 79)
             p("Edge type information (symmetry) ")
-            p("-"*79)
+            p("-" * 79)
             for t in np.unique(-self.node_types[self.edge_indices]):
                 t = -t
                 p("Edge type: %d" % t)
@@ -584,9 +598,9 @@ class Topology:
 
         if slot_info:
             p("")
-            p("-"*79)
+            p("-" * 79)
             p("Slot information")
-            p("-"*79)
+            p("-" * 79)
             for i in range(self.n_slots):
                 p("[Slot %d]" % i, end=" ")
                 adjacent_slot_indices = comma_numbers(
@@ -594,13 +608,18 @@ class Topology:
                 )
                 if i in self.node_indices:
                     cn = self.cn[i]
-                    p("node type: %d, CN: %d, adjecent slot: %s"
-                      % (self.node_types[i], cn, adjacent_slot_indices)
-                     )
+                    p(
+                        "node type: %d, CN: %d, adjecent slot: %s"
+                        % (self.node_types[i], cn, adjacent_slot_indices)
+                    )
                 if i in self.edge_indices:
-                    p("edge type: (%d, %d) or %d, adjecent slot: %s"
-                      % (*self.edge_types[i], self.node_types[i],
-                         adjacent_slot_indices)
-                     )
+                    p(
+                        "edge type: (%d, %d) or %d, adjecent slot: %s"
+                        % (
+                            *self.edge_types[i],
+                            self.node_types[i],
+                            adjacent_slot_indices,
+                        )
+                    )
 
-        p("="*79)
+        p("=" * 79)

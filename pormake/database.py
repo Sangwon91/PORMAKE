@@ -1,9 +1,10 @@
-from .log import logger
-from .topology import Topology
-from .building_block import BuildingBlock
-
 import pickle
 from pathlib import Path
+
+from .building_block import BuildingBlock
+from .log import logger
+from .topology import Topology
+
 
 class Database:
     def __init__(self, topo_dir=None, bb_dir=None):
@@ -13,13 +14,15 @@ class Database:
             self.topo_dir = db_path / "topologies"
             logger.debug("Default topology DB is loaded.")
         else:
-            self.topo_dir = topo_dir
+            self.topo_dir = Path(topo_dir)
+            logger.debug('topo_dir type is changed to %s' % type(self.topo_dir))
 
         if bb_dir is None:
             self.bb_dir = db_path / "bbs"
             logger.debug("Default building block DB is loaded.")
         else:
-            self.bb_dir = bb_dir
+            self.bb_dir = Path(bb_dir)
+            logger.debug('bb_dir type is changed to %s' % type(self.bb_dir))
 
         if not self.topo_dir.exists():
             message = "%s does not exist." % self.topo_dir
@@ -57,34 +60,35 @@ class Database:
         print("Database serialization starts.")
         n_topos = len(self.topo_list)
         for i, name in enumerate(self.topo_list, start=1):
-            cgd_path = self.topo_dir / (name+".cgd")
+            cgd_path = self.topo_dir / (name + ".cgd")
             try:
                 topo = Topology(cgd_path)
             except Exception as e:
+                logger.debug(f'Invalid topology {e}')
                 continue
 
             # Save pickle
-            pickle_path = self.topo_dir / (name+".pickle")
+            pickle_path = self.topo_dir / (name + ".pickle")
             with pickle_path.open("wb") as f:
                 pickle.dump(topo, f)
             logger.debug("Pickle %s saved" % pickle_path)
 
             percent = i / n_topos * 100
-            print("\rProgress: %.1f %% (%d/%d)"
-                  % (percent, i, n_topos), end="")
+            print("\rProgress: %.1f %% (%d/%d)" % (percent, i, n_topos), end="")
 
     def get_topology(self, name):
         # Add .cgd to the topology name.
-        pickle_path = self.topo_dir / (name+".pickle")
+        pickle_path = self.topo_dir / (name + ".pickle")
         try:
             with pickle_path.open("rb") as f:
                 topo = pickle.load(f)
             logger.debug("Topology is loaded from pickle.")
             return topo
-        except:
+        except Exception as e:
+            # logger.exception(e)
             logger.debug("No %s.pickle in DB. Try cgd format.", name)
 
-        cgd_path = self.topo_dir / (name+".cgd")
+        cgd_path = self.topo_dir / (name + ".cgd")
         try:
             topo = Topology(cgd_path)
         except Exception as e:

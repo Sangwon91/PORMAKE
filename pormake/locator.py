@@ -18,7 +18,7 @@ def find_best_permutation(p, q):
 def find_best_orientation(p, q):
     # This function gives root "sum" squared distance...
     U, rmsd = scipy.spatial.transform.Rotation.align_vectors(p, q)
-    return U.as_matrix().T, np.sqrt(np.square(rmsd)/len(p))
+    return U.as_matrix().T, np.sqrt(np.square(rmsd) / len(p))
 
 
 class Locator:
@@ -108,10 +108,12 @@ class Locator:
         local1 = bb.local_structure()
 
         # p: target points, q: to be rotated points.
-        p_atoms = np.array(local0.atoms.symbols)
+        # Atom types are neglected.
+        # p_atoms = np.array(local0.atoms.symbols)
         p_coord = local0.atoms.positions
 
-        q_atoms = np.array(local1.atoms.symbols)
+        # Atom types are neglected.
+        # q_atoms = np.array(local1.atoms.symbols)
         q_coord = local1.atoms.positions
         # Permutation used here.
         q_coord = q_coord[permutation]

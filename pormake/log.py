@@ -12,9 +12,7 @@ file_log_handler = logging.FileHandler(filename="runtime.log", mode="w")
 file_log_handler.setLevel(logging.DEBUG)
 
 _format = (
-    "[%(asctime)s (%(levelname)s) "
-    "%(filename)s:%(lineno)s] "
-    "%(message)s"
+    "[%(asctime)s (%(levelname)s) " "%(filename)s:%(lineno)s] " "%(message)s"
 )
 
 formatter = logging.Formatter(
@@ -34,17 +32,21 @@ console_log_handler.setFormatter(formatter)
 logger.addHandler(file_log_handler)
 logger.addHandler(console_log_handler)
 
+
 def disable_print():
     console_log_handler.setLevel(logging.WARNING)
     logger.warning("Console logs (under WARNING level) are disabled.")
+
 
 def enable_print():
     console_log_handler.setLevel(logging.INFO)
     logger.warning("Console logs (under WARNING level) are enabled.")
 
+
 def disable_file_print():
     file_log_handler.setLevel(logging.WARNING)
     logging.warning("File logs (under WARNING level) are disabled.")
+
 
 def enable_file_print():
     file_log_handler.setLevel(logging.DEBUG)

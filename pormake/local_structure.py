@@ -1,9 +1,9 @@
-import numpy as np
-
 import ase
 import ase.visualize
+import numpy as np
 
 from .utils import write_molecule_cif
+
 
 class LocalStructure:
     def __init__(self, positions, indices, normalization_func=None):

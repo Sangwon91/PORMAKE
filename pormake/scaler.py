@@ -1,23 +1,21 @@
-from .log import logger
-
-import os
-
-from itertools import permutations, product
 from collections import defaultdict
+from itertools import product
 
+import jax
+import jax.numpy as jnp
 import numpy as np
 import scipy as sp
 import scipy.optimize
 
-import jax
-import jax.numpy as jnp
-
+from .log import logger
 from .utils import bound_values
+
 
 class Scaler:
     """
     Scale topology using given nodes and edges building blocks information.
     """
+
     def __init__(self, length_weight=1.0):
         """
         Inputs:
@@ -56,7 +54,7 @@ class Scaler:
 
             ri = topology.atoms.positions[i]
             rj = topology.atoms.positions[j]
-            s = (d - (rj-ri)) @ invc
+            s = (d - (rj - ri)) @ invc
 
             images.append(s)
 
@@ -77,13 +75,13 @@ class Scaler:
 
             # Find connection point index.
             for ci, n in enumerate(topology.neighbor_list[i]):
-                zero_sum = np.abs(n.distance_vector+ni.distance_vector)
+                zero_sum = np.abs(n.distance_vector + ni.distance_vector)
                 if (zero_sum < 1e-3).all():
                     # ci saved.
                     break
 
             for cj, n in enumerate(topology.neighbor_list[j]):
-                zero_sum = np.abs(n.distance_vector+nj.distance_vector)
+                zero_sum = np.abs(n.distance_vector + nj.distance_vector)
                 if (zero_sum < 1e-3).all():
                     # cj saved.
                     break
@@ -102,7 +100,7 @@ class Scaler:
 
             edge_length = len_i + len_j
             if bbs[e] is not None:
-                edge_length += 2*bbs[e].lengths[0]
+                edge_length += 2 * bbs[e].lengths[0]
 
             # Rescaling.
             vec_i = vec_i / np.linalg.norm(vec_i) * edge_length
@@ -145,7 +143,7 @@ class Scaler:
 
                 if (j == k) and np.allclose(j_image, k_image):
                     # 2 for count collection for dot product of same edges.
-                    weights.append(2*self.length_weight)
+                    weights.append(2 * self.length_weight)
                 else:
                     weights.append(1.0)
 
@@ -181,11 +179,11 @@ class Scaler:
         target_ij_vec = np.array(target_ij_vec)
         target_ik_vec = np.array(target_ik_vec)
 
-        target_dots = np.sum(target_ij_vec*target_ik_vec, axis=-1)
+        target_dots = np.sum(target_ij_vec * target_ik_vec, axis=-1)
 
         # Get max / min ratio of edge length.
         lengths = np.sqrt(target_dots[weights > 1.1])
-        #for l in lengths:
+        # for l in lengths:
         #    logger.info("Length: %.3f", l)
         max_len = np.max(lengths)
         min_len = np.min(lengths)
@@ -205,8 +203,6 @@ class Scaler:
             External variables:
                 topology, pairs, image, ij, ik, ij_image, ik_image.
             """
-            n = topology.n_slots
-
             # diff becames n x n x 3 tensor with element of
             # diff[i, j, :] = si - sj.
             diff = s[jnp.newaxis, :, :] - s[:, jnp.newaxis, :]
@@ -220,7 +216,7 @@ class Scaler:
 
         def objective(s, c):
             dots = calc_dots(s, c)
-            return jnp.mean(jnp.square(dots-target_dots) * weights)
+            return jnp.mean(jnp.square(dots - target_dots) * weights)
 
         # Functions for scipy interface.
         def fun(x):
@@ -235,8 +231,11 @@ class Scaler:
 
         jac = jax.jit(jax.grad(fun))
 
-        fun_numpy = lambda x: np.array(fun(x), dtype=np.float64)
-        jac_numpy = lambda x: np.array(jac(x), dtype=np.float64)
+        def fun_numpy(x):
+            return np.array(fun(x), dtype=np.float64)
+
+        def jac_numpy(x):
+            return np.array(jac(x), dtype=np.float64)
 
         # Prepare geometry optimization.
         # Make initial value.
@@ -296,7 +295,7 @@ class Scaler:
 
             d = nj.distance_vector - ni.distance_vector
 
-            image = (d - (rj-ri)) @ inv_old_c
+            image = (d - (rj - ri)) @ inv_old_c
 
             # Calculate new edge center.
             ri = r[i]
@@ -305,19 +304,16 @@ class Scaler:
             d = rj - ri + np.dot(image, c)
 
             # Select center position wrapped by unit cell.
-            rc = ri + 0.5*d
+            rc = ri + 0.5 * d
             sc = np.dot(rc, invc)
             # Boundary wrap
             sc = bound_values(sc)
             if (sc < 0).any() or (sc > 1).any():
-                rc = np.around(rj - 0.5*d, decimals=3)
+                rc = np.around(rj - 0.5 * d, decimals=3)
             r[e] = rc
 
             # Save in proper order.
-            new_data[e] += [
-                (i, -0.5*d),
-                (j, 0.5*d)
-            ]
+            new_data[e] += [(i, -0.5 * d), (j, 0.5 * d)]
 
         # Should change this stupidly nested loop.
         # The new neigbor list is updated with same order of original neigbor
@@ -330,7 +326,7 @@ class Scaler:
                 d = n.distance_vector
                 # Find cross reference.
                 for j, en in enumerate(topology.neighbor_list[e]):
-                    if np.linalg.norm(d+ en.distance_vector) < 1e-4:
+                    if np.linalg.norm(d + en.distance_vector) < 1e-4:
                         # j and en saved.
                         break
 

@@ -1,23 +1,22 @@
 import copy
 
-import numpy as np
-
 import ase
 import ase.visualize
+import numpy as np
 
 try:
     from ase.utils import natural_cutoffs
-except Exception as e:
+except Exception:
     from ase.neighborlist import natural_cutoffs
 
-from .log import logger
-from .utils import (
-    read_budiling_block_xyz,
-    covalent_neighbor_list,
-    write_molecule_cif,
-    METAL_LIKE,
-)
 from .local_structure import LocalStructure
+from .log import logger
+from .utils import (  # covalent_neighbor_list,
+    METAL_LIKE,
+    read_budiling_block_xyz,
+    write_molecule_cif,
+)
+
 
 class BuildingBlock:
     def __init__(self, bb_file, local_structure_func=None):
@@ -42,10 +41,10 @@ class BuildingBlock:
     def local_structure(self):
         connection_points = self.atoms[self.connection_point_indices].positions
         return LocalStructure(
-                   connection_points,
-                   self.connection_point_indices,
-                   normalization_func=self.local_structure_func
-               )
+            connection_points,
+            self.connection_point_indices,
+            normalization_func=self.local_structure_func,
+        )
 
     def set_centroid(self, centroid):
         """
@@ -126,7 +125,7 @@ class BuildingBlock:
 
         # Check whether all atoms has bond or not.
         indices = set(np.array(self._bonds).reshape(-1))
-        #X_indices = set([a.index for a in self.atoms if a.symbol == "X"])
+        # X_indices = set([a.index for a in self.atoms if a.symbol == "X"])
         atom_indices = set([a.index for a in self.atoms])
 
         sub = list(atom_indices - indices)
@@ -134,15 +133,17 @@ class BuildingBlock:
         if len(sub) != 0:
             pair = [(i, self.atoms.symbols[i]) for i in sub]
             logger.warning(
-                "There are atoms without bond: %s, %s.", self.name, pair,
+                "There are atoms without bond: %s, %s.",
+                self.name,
+                pair,
             )
-            #logger.warning("Make new bond for X.")
+            # logger.warning("Make new bond for X.")
 
     def calculate_bonds(self):
         logger.debug("Start calculating bonds.")
 
         r = self.atoms.positions
-        c = 1.2*np.array(natural_cutoffs(self.atoms))
+        c = 1.2 * np.array(natural_cutoffs(self.atoms))
 
         diff = r[np.newaxis, :, :] - r[:, np.newaxis, :]
         norms = np.linalg.norm(diff, axis=-1)
@@ -171,3 +172,36 @@ class BuildingBlock:
 
     def write_cif(self, filename):
         write_molecule_cif(filename, self.atoms, self.bonds, self.bond_types)
+
+    def find_furthest_atom_index(self):
+        # Read the XYZ file
+        edge = self
+        atoms = self.atoms
+
+        # Extract symbols and positions
+        positions = atoms.get_positions()
+
+        # Find the indices of the two atoms with the given symbol
+        indices = edge.connection_point_indices
+        if len(indices) != 2:
+            raise ValueError("Number of edge connection point is not 2")
+
+        # Get the coordinates of the two atoms
+        coord1 = positions[indices[0]]
+        coord2 = positions[indices[1]]
+
+        # Define the axis vector
+        axis_vector = coord2 - coord1
+        axis_unit_vector = axis_vector / np.linalg.norm(axis_vector)
+
+        # Calculate the projection of each atom onto the axis
+        projections = np.dot(positions - coord1, axis_unit_vector)
+
+        # Find the index of the atom with the maximum distance from the axis
+        distances = np.linalg.norm(
+            (positions - coord1) - np.outer(projections, axis_unit_vector),
+            axis=1,
+        )
+        furthest_atom_index = np.argmax(distances)
+
+        return furthest_atom_index
