@@ -14,9 +14,9 @@ Development Roadmap (updated 2024.12.20):
 
 ## Release Note
 #### New fork
-[Repository URL](https://github.com/geonho42/PORMAKE/tree/dev/pormake)
+[Repository URL](https://github.com/geonho42/PORMAKE)
 
-This fork attempted to solve an issue in PORMAKE where, when generating Porous materials, linkers would be inserted with random rotation around the axis formed by two connection points. For those who need this functionality, please refer to the [README](https://github.com/geonho42/PORMAKE/tree/dev/example/script/pormake_v2) of this fork.
+This fork attempted to solve an issue in PORMAKE where, when generating Porous materials, linkers would be inserted with random rotation around the axis formed by two connection points. In addition, single metal node building blocks are added as an alternative to cluster building blocks, and corresponding organic linkers and organic node building blocks are added to generate porous materials with small pore sizes. For those who need this functionality, please refer to the [README](https://github.com/geonho42/PORMAKE/blob/main/example/script/pormake_v2/README.md) of this fork.
 
 Thank you for your valuable contribution @geonho42 !
 
