@@ -5,21 +5,30 @@
 >
 > [Please cite me if you find it useful!](https://pubs.acs.org/doi/abs/10.1021/acsami.1c02471)
 
-Development Roadmap (updated 2023.08.01):
+Development Roadmap (updated 2024.12.20):
+1. Change of project management tool: `poetry` to `uv`
+1. Simple web application for the generation of porous materials
 1. Enrich the code with descriptive docstrings.
-2. Fortify the project by implementing comprehensive test code.
-3. Development of an enhanced algorithm for improved placement of edge building blocks (considering symmetry).
+1. Fortify the project by implementing comprehensive test code.
+1. Development of an enhanced algorithm for improved placement of edge building blocks (considering symmetry).
 
 ## Release Note
-Version: `0.2.1`
+#### New fork
+[Repository URL](https://github.com/geonho42/PORMAKE)
+
+This fork attempted to solve an issue in PORMAKE where, when generating Porous materials, linkers would be inserted with random rotation around the axis formed by two connection points. In addition, single metal node building blocks are added as an alternative to cluster building blocks, and corresponding organic linkers and organic node building blocks are added to generate porous materials with small pore sizes. For those who need this functionality, please refer to the [README](https://github.com/geonho42/PORMAKE/blob/main/example/script/pormake_v2/README.md) of this fork.
+
+Thank you for your valuable contribution @geonho42 !
+
+#### Version: `0.2.1`
 
 **New feature added**: Building blocks with partial charge
 
 The example can be found in [here](./example/notebook/test_charged.py).
 
-Thank you for your valuable contribution [aniruddha-seal](https://github.com/aniruddha-seal)!
+Thank you for your valuable contribution @aniruddha-seal !
 
-Version: `0.2.0`
+#### Version: `0.2.0`
 
 **New feature added**: A module for extracting building blocks from MOFs
 
@@ -518,4 +527,24 @@ You can load building block using `BuilingBlock` object like below:
 
 ```python
 bb = pm.BuildingBlock('N10.xyz')
+```
+
+## Contributions
+This project is managed through [`uv`](https://docs.astral.sh/uv/). It is strongly recommended to use `uv` for development. Additionally, support for Python versions below `3.10` will be discontinued in the future, so it is recommended to use Python `3.10` or higher. Below are examples of commands used when developing with `uv`.
+
+### 1. Install required libraries
+```bash
+git clone [this repository]
+cd [this repository]
+uv sync
+```
+
+### 2. Apply pre-commit before commit
+```bash
+uvx pre-commit
+```
+
+### 3. Install new libraries for new functionalities
+```bash
+uv add [library name]
 ```

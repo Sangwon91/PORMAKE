@@ -24,9 +24,15 @@ In **PORMAKE**, linkers are placed arbitrarily, leading to collisions or failure
 Run the script located at:
 
 ```bash
-/PORMAKE/example/script/pormake_v2.py
+/PORMAKE/example/script/pormake_v2/pormake_v2.py
 ```
 If you run the script after the **basic setup(1-1)**, you can get `{name}_PORMAKE_v2.cif` with linker rotation and `{name}_PORMAKE_v2_relax.cif` with optimization.
+
+You can use new building blocks for small pore size porous materials at:
+```bash
+/PORMAKE/example/script/pormake_v2/pormake_v2_database/bbs/
+```
+E: Organic Linkers, M: Single Metal Nodes, N: Organic Nodes
 
 ---
 
