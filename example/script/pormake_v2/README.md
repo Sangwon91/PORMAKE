@@ -4,6 +4,8 @@ This code addresses the problems encountered when generating small pore size por
 
 In **PORMAKE**, linkers are placed arbitrarily, leading to collisions or failure to accurately model the real structure for small pore sizes. To mitigate this, **PORMAKE v2** rotates and arranges the linkers according to the space group of each topology.
 
+In addition, single metal node building blocks are added as an alternative to cluster building blocks, and corresponding organic linkers and organic node building blocks are added to generate porous materials with **small pore sizes**.
+
 ---
 - [POREMAKE v2](#poremake-v2)
   - [Part 0: How to Use](#part-0-how-to-use)
@@ -23,30 +25,47 @@ In **PORMAKE**, linkers are placed arbitrarily, leading to collisions or failure
 
 ### Installation
 
-#### 1. Directly install from Github repository
+#### Editable installtion
 ```
-pip install git+https://github.com/geonho42/PORMAKE.git
-```
-
-#### 2. Editable installtion
-```
-git clone https://github.com/geonho42/PORMAKE.git
-pip install -e PORMAKE
+git clone https://github.com/geonho42/PORMAKE_v2.git
+pip install -e PORMAKE_v2
+pip install m3gnet
 ```
 
 ### Run the script
 Run the script located at:
 
 ```bash
-/PORMAKE/example/script/pormake_v2/pormake_v2.py
+/PORMAKE_v2/example/script/pormake_v2/pormake_v2.py
 ```
 If you run the script after the **basic setup(1-1)**, you can get `{name}_PORMAKE_v2.cif` with linker rotation and `{name}_PORMAKE_v2_relax.cif` with optimization.
 
+### How to use Single Metal Node and Corresponding Building Blocks
+
 You can use new building blocks for small pore size porous materials at:
 ```bash
-/PORMAKE/example/script/pormake_v2/pormake_v2_database/bbs/
+/PORMAKE_v2/example/script/pormake_v2/pormake_v2_database/bbs/
 ```
 E: Organic Linkers, M: Single Metal Nodes, N: Organic Nodes
+
+```python
+from pathlib import Path
+import pormake as pm
+
+name = "ZIF-2"
+database = pm.Database()
+new_database = pm.Database(bb_dir=Path("./pormake_v2_database/bbs"))
+topo = database.get_topo("sod")
+node_bb = new_database.get_bb("M2")    #Zn single metal node with cn 4
+edge_bb = new_database.get_bb("E27")
+
+builder = pm.Builder()
+current_node = {}
+current_edge = {}
+
+current_node[0] = node_bb
+current_edge[(0, 0)] = edge_bb
+```
 
 ---
 
