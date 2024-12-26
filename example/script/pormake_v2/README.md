@@ -21,6 +21,20 @@ In **PORMAKE**, linkers are placed arbitrarily, leading to collisions or failure
 
 ## Part 0: How to Use
 
+### Installation
+
+#### 1. Directly install from Github repository
+```
+pip install git+https://github.com/geonho42/PORMAKE.git
+```
+
+#### 2. Editable installtion
+```
+git clone https://github.com/geonho42/PORMAKE.git
+pip install -e PORMAKE
+```
+
+### Run the script
 Run the script located at:
 
 ```bash
