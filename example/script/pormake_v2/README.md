@@ -66,6 +66,29 @@ current_edge = {}
 current_node[0] = node_bb
 current_edge[(0, 0)] = edge_bb
 ```
+### Generate random MOFs and Set up
+
+```bash
+/PORMAKE_v2/example/script/pormake_v2/generate_random_mof.py
+```
+
+You can get n random MOFs name with single metal nodes and corresponding edges.
+
+```bash
+/random_mof_names.txt
+
+crr+M70+E194
+umo+M34+E153
+brl+M6+M82+E123+E2
+...
+```
+You can use generated MOFs name for PORMAKE_v2 like this.
+```bash
+builder = pm.Builder()
+
+name, topo, current_node, current_edge = create_mof_from_name("crr+M70+E194")
+```
+
 
 ---
 
@@ -95,6 +118,14 @@ This configuration is identical to the original **PORMAKE** setup. Please refer 
 
 **Note**: Mixing multiple edge types is not currently supported in **PORMAKE v2**.
 
+Or you can use generated random MOF's name.
+```python
+import pormake as pm
+
+builder = pm.Builder()
+
+name, topo, current_node, current_edge = create_mof_from_name("sod+M2+E31")
+```
 ---
 
 ### 1-2: Additional Settings for PORMAKE v2

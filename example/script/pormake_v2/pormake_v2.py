@@ -1,28 +1,33 @@
 import copy
 import json
 import time
+from pathlib import Path
 
 import numpy as np
 from m3gnet.models import M3GNet, M3GNetCalculator, Potential, Relaxer
 from pymatgen.core import Element, Structure
+from random_mof_generation.random_mof_generator import create_mof_from_name
 
 import pormake as pm
 
 # original Pormake setting
-
-name = "name"
 database = pm.Database()
-edge_bb = database.get_bb("E14")
-topo = database.get_topo("pcu")
-node_bb = database.get_bb("N16")
+new_database = pm.Database(bb_dir=Path("./pormake_v2_database/bbs"))
 
-builder = pm.Builder()
+# Manually
+name = "sod+M2+E31"
+topo = database.get_topo("sod")
+node_bb = new_database.get_bb("M2")
+edge_bb = new_database.get_bb("E31")
 current_node = {}
 current_edge = {}
-
 current_node[0] = node_bb
 current_edge[(0, 0)] = edge_bb
 
+# By mof name
+name, topo, current_node, current_edge = create_mof_from_name("sod+M2+E31")
+
+builder = pm.Builder()
 
 # edge에 None이 들어가는지 확인, 첫 edge가 None일 경우 처음으로 나오는 None이 아닌 edge를 first_valid_edge_index로 설정하고, edge_representer 설정
 
@@ -230,7 +235,7 @@ GUN.write_cif(name + '_PORMAKE_v2.cif', spacegroup_vis=False)
 
 b = time.time()
 
-# relaxation
+# Relaxation by m3gnet
 pmg_structure = Structure.from_file(name + '_PORMAKE_v2.cif')
 relax_results = relaxer.relax(pmg_structure, steps=10000, fmax=0.05)
 energy_per_atom = float(
