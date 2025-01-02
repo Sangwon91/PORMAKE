@@ -2,33 +2,62 @@
 **Por**ous materials **Make**r
 
 > Python library for the construction of porous materials using topology and building blocks.
-> 
-> Please cite [me](https://pubs.acs.org/doi/abs/10.1021/acsami.1c02471) if you find it useful!
+>
+> [Please cite me if you find it useful!](https://pubs.acs.org/doi/abs/10.1021/acsami.1c02471)
+
+Development Roadmap (updated 2024.12.20):
+1. Change of project management tool: `poetry` to `uv`
+1. Simple web application for the generation of porous materials
+1. Enrich the code with descriptive docstrings.
+1. Fortify the project by implementing comprehensive test code.
+1. Development of an enhanced algorithm for improved placement of edge building blocks (considering symmetry).
+
+## Release Note
+#### New fork
+[Repository URL](https://github.com/geonho42/PORMAKE)
+
+This fork attempted to solve an issue in PORMAKE where, when generating Porous materials, linkers would be inserted with random rotation around the axis formed by two connection points. In addition, single metal node building blocks are added as an alternative to cluster building blocks, and corresponding organic linkers and organic node building blocks are added to generate porous materials with small pore sizes. For those who need this functionality, please refer to the [README](https://github.com/geonho42/PORMAKE/blob/main/example/script/pormake_v2/README.md) of this fork.
+
+Thank you for your valuable contribution @geonho42 !
+
+#### Version: `0.2.1`
+
+**New feature added**: Building blocks with partial charge
+
+The example can be found in [here](./example/notebook/test_charged.py).
+
+Thank you for your valuable contribution @aniruddha-seal !
+
+#### Version: `0.2.0`
+
+**New feature added**: A module for extracting building blocks from MOFs
+
+[MOF Decomposer README](./pormake/experimental/decomposer/README.md)
+
+<image src="doc/decomposer.png" width="500px"></image>
 
 ## Installation
-* Dependencies
+
+### 1. Using PIP
+
+ This method is only valid for Linux and macOS as `jax` supports those operating
+systems. It is recommended to use WSL for Windows users.
 
 ```
-python>=3.7
+pip install pormake
 ```
 
-```
-jax[cpu]
-pymatgen<2022
-ase>=3.18.0
-```
+### 2. From source
 
-1. Install all dependencies.
-
-**Warning: on Windows system, you have to install `jax` and `pymatgen` manually.**
-```bash
-$ pip install -r requirements.txt
+#### 1. Directly install from Github repository
+```
+pip install git+https://github.com/Sangwon91/PORMAKE.git
 ```
 
-2. Install `pormake` using `setup.py`
-
-```bash
-$ python setup.py install
+#### 2. Editable installtion
+```
+git clone https://github.com/Sangwon91/PORMAKE.git
+pip install -e PORMAKE
 ```
 
 ## Examples
@@ -54,7 +83,7 @@ You can check the information using `.describe()` method.
 tbo.describe()
 ```
 
-In this case, there are two node types (`0` and `1`) and one edge type (`(0, 1)`). `CN` in the node information indicates coordination number (number of adjacent nodes). 
+In this case, there are two node types (`0` and `1`) and one edge type (`(0, 1)`). `CN` in the node information indicates coordination number (number of adjacent nodes).
 
 ```
 ===============================================================================
@@ -79,7 +108,7 @@ Node type: 1, CN: 4
                 52, 53, 54, 55
 
 -------------------------------------------------------------------------------
-Edge type information (adjacent node types) 
+Edge type information (adjacent node types)
 -------------------------------------------------------------------------------
 Edge type: (0, 1)
   slot indices: 56, 57, 58, 59, 60, 61, 62, 63, 64, 65
@@ -211,7 +240,7 @@ N13.view()
 
 <img src="doc/N13.png" width=400>
 
-Before the next step, you should know the equivalence of the following two approaches for MOF construction. 
+Before the next step, you should know the equivalence of the following two approaches for MOF construction.
 
 ```python
 # Approach 1.
@@ -283,7 +312,7 @@ Node type: 0, CN: 6
   slot indices: 0
 
 -------------------------------------------------------------------------------
-Edge type information (adjacent node types) 
+Edge type information (adjacent node types)
 -------------------------------------------------------------------------------
 Edge type: (0, 0)
   slot indices: 1, 2, 3
@@ -313,7 +342,7 @@ Node type: 0, CN: 6
   slot indices: 0, 1
 
 -------------------------------------------------------------------------------
-Edge type information (adjacent node types) 
+Edge type information (adjacent node types)
 -------------------------------------------------------------------------------
 Edge type: (0, 0)
   slot indices: 2, 3, 4, 5, 6, 7
@@ -368,7 +397,7 @@ print("RMSD at pcu node type 0: %.2f" % pcu_rmsd_0)
 RMSD at pcu node type 0: 0.42
 ```
 
-In general, `RMSD < 0.3`  is good threshold for the MOF constructions. 
+In general, `RMSD < 0.3`  is good threshold for the MOF constructions.
 
 
 
@@ -399,7 +428,7 @@ Node type: 1, CN: 12
   slot indices: 6, 7
 
 -------------------------------------------------------------------------------
-Edge type information (adjacent node types) 
+Edge type information (adjacent node types)
 -------------------------------------------------------------------------------
 Edge type: (0, 1)
   slot indices: 8, 9, 10, 11, 12, 13, 14, 15, 16, 17
@@ -476,18 +505,18 @@ H    0.2000 2.3210 0.0000
 X    -0.7500 0.0000 0.0000
 X    2.6850 -1.9831 0.0000
 X    2.6850 1.9831 0.0000
-   0    1 A   
-   0    5 A   
-   1    2 A   
-   1    6 S   
-   2    3 A   
-   3    4 A   
-   3    7 S   
-   4    5 A   
-   5    8 S   
-   9    0 S   
-  10    2 S   
-  11    4 S   
+   0    1 A
+   0    5 A
+   1    2 A
+   1    6 S
+   2    3 A
+   3    4 A
+   3    7 S
+   4    5 A
+   5    8 S
+   9    0 S
+  10    2 S
+  11    4 S
 ```
 
 The first two columns are the indices of atoms consisting the bond and the third term is bond type.
@@ -498,4 +527,24 @@ You can load building block using `BuilingBlock` object like below:
 
 ```python
 bb = pm.BuildingBlock('N10.xyz')
+```
+
+## Contributions
+This project is managed through [`uv`](https://docs.astral.sh/uv/). It is strongly recommended to use `uv` for development. Additionally, support for Python versions below `3.10` will be discontinued in the future, so it is recommended to use Python `3.10` or higher. Below are examples of commands used when developing with `uv`.
+
+### 1. Install required libraries
+```bash
+git clone [this repository]
+cd [this repository]
+uv sync
+```
+
+### 2. Apply pre-commit before commit
+```bash
+uvx pre-commit
+```
+
+### 3. Install new libraries for new functionalities
+```bash
+uv add [library name]
 ```

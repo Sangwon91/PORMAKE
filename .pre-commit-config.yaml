@@ -1,0 +1,48 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.3.0
+    hooks:
+    -   id: check-yaml
+    -   id: end-of-file-fixer
+        exclude: |
+            '\.csv$'
+            '\.lock$'
+    -   id: trailing-whitespace
+        exclude: |
+            '\.csv$'
+            '\.lock$'
+-   repo: https://github.com/pycqa/isort
+    # Recent version of Poetry had a breaking
+    # change incompatible with isort <= 5.11.4.
+    rev: 5.12.0
+    hooks:
+    -   id: isort
+        args: [
+            '--line-width=80',
+            # In order to use with black.
+            '--profile=black',
+            # '--multi-line=HANGING_INDENT'
+        ]
+-   repo: https://github.com/psf/black
+    rev: 23.1.0
+    hooks:
+    -   id: black
+        args: [
+            '--line-length=80',
+            # Do not use double quotes.
+            '--skip-string-normalization'
+        ]
+-   repo: https://github.com/PyCQA/flake8
+    rev: 6.0.0
+    hooks:
+    -   id: flake8
+        # W503: This warning is generated when a line break
+        #       occurs before a binary operator (such as + or -)
+        # E501: Try to respect --line-length,
+        #       but don’t become crazy if you can’t.
+        # E203: whitespace before ':'.
+        # E402: module level import not at top of file.
+        # E741: ambiguous variable name.
+        args: ['--max-line-length=80', '--ignore=W503,E501,E203,E40,E741']
+        # __init__ frequently violate F401, F403.
+        exclude: '__init__'

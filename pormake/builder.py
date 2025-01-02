@@ -1,12 +1,41 @@
+import json
 from collections import defaultdict
+from pathlib import Path
 
 import numpy as np
+import spglib
+from ase import Atoms
+from scipy.spatial.transform import Rotation as R
 
-from .log import logger
 from .framework import Framework
-from .scaler import Scaler
-from .locator import Locator
 from .local_structure import LocalStructure
+from .locator import Locator
+from .log import logger
+from .scaler import Scaler
+
+
+def rotate_edge(edge, angle_deg):
+    """
+    Rotate edge
+
+    Args:
+        edge: edge building block
+        angle_deg: ratate angle, 0 to 360
+
+    """
+    molecule = edge.atoms
+    axis_start = np.array(edge.connection_points[0])
+    axis_end = np.array(edge.connection_points[1])
+    angle_rad = np.radians(angle_deg)
+    axis_vector = axis_end - axis_start
+    axis_vector /= np.linalg.norm(axis_vector)
+    rotation = R.from_rotvec(angle_rad * axis_vector)
+    positions = molecule.get_positions()
+    translated_positions = positions - axis_start
+    rotated_positions = rotation.apply(translated_positions)
+    new_positions = rotated_positions + axis_start
+    molecule.set_positions(new_positions)
+
 
 # bb: building block.
 class Builder:
@@ -46,7 +75,8 @@ class Builder:
             t = tuple(t)
             if t not in edge_bbs:
                 logger.info(
-                    "No edge building block for type %s in edge_bbs.", t)
+                    "No edge building block for type %s in edge_bbs.", t
+                )
 
         for i in topology.edge_indices:
             t = tuple(topology.edge_types[i])
@@ -57,11 +87,20 @@ class Builder:
 
         return bbs
 
-    def build_by_type(self, topology, node_bbs, edge_bbs=None, **kwargs):
+    def build_by_type(
+        self,
+        topology,
+        node_bbs,
+        edge_bbs=None,
+        first_valid_edge_index=0,
+        **kwargs,
+    ):
         bbs = self.make_bbs_by_type(topology, node_bbs, edge_bbs)
-        return self.build(topology, bbs, **kwargs)
+        return self.build(topology, bbs, first_valid_edge_index, **kwargs)
 
-    def build(self, topology, bbs, permutations=None, **kwargs):
+    def build(
+        self, topology, bbs, first_valid_edge_index, permutations=None, **kwargs
+    ):
         """
         The node_bbs must be given with proper order.
         Same as node type order in topology.
@@ -116,15 +155,18 @@ class Builder:
                 logger.info(
                     "Use given permutation for node slot index %d"
                     ", permutation: %s",
-                    i, perm
+                    i,
+                    perm,
                 )
 
-                located_node, rmsd = \
-                    locator.locate_with_permutation(target, node_bb, perm)
+                located_node, rmsd = locator.locate_with_permutation(
+                    target, node_bb, perm
+                )
 
                 logger.info(
                     "Pre-location of node slot %d, RMSD: %.2E",
-                    i, rmsd,
+                    i,
+                    rmsd,
                 )
 
                 located_bbs[i] = located_node
@@ -136,14 +178,16 @@ class Builder:
             key = (t, node_bb.name)
             if slot_min_rmsd[key] < 0.0:
                 rmsd = locator.calculate_rmsd(
-                           target, node_bb, max_n_slices=max_n_slices)
+                    target, node_bb, max_n_slices=max_n_slices
+                )
 
                 chiral_node_bb = node_bb.make_chiral_building_block()
                 c_rmsd = locator.calculate_rmsd(target, chiral_node_bb)
                 slot_min_rmsd[key] = min(rmsd, c_rmsd)
                 logger.info(
                     "== Min RMSD of (node type: %s, node bb: %s): %.2E",
-                    *key, slot_min_rmsd[key]
+                    *key,
+                    slot_min_rmsd[key],
                 )
             # Only orientation.
             # Translations are applied after topology relexation.
@@ -152,31 +196,39 @@ class Builder:
                 "Pre-location at node slot %d"
                 ", (node type: %s, node bb: %s)"
                 ", RMSD: %.2E",
-                i, *key, rmsd,
+                i,
+                *key,
+                rmsd,
             )
             # If RMSD is different from min RMSD relocate with high accuracy.
             # 1% error.
             ratio = rmsd / slot_min_rmsd[key]
             if ratio > 1.01:
-                located_node, perm, rmsd = \
-                    locator.locate(target, node_bb, max_n_slices=max_n_slices)
+                located_node, perm, rmsd = locator.locate(
+                    target, node_bb, max_n_slices=max_n_slices
+                )
                 logger.info(
                     "RMSD > MIN_RMSD*1.01, relocate Node %d"
                     " with %d trial orientations, RMSD: %.2E",
-                    i, max_n_slices**3, rmsd
+                    i,
+                    max_n_slices**3,
+                    rmsd,
                 )
 
             ratio = rmsd / slot_min_rmsd[key]
             if ratio > 1.01:
                 # Make chiral building block.
                 node_bb = node_bb.make_chiral_building_block()
-                located_node, perm, rmsd = \
-                    locator.locate(target, node_bb, max_n_slices=max_n_slices)
+                located_node, perm, rmsd = locator.locate(
+                    target, node_bb, max_n_slices=max_n_slices
+                )
                 logger.info(
                     "RMSD > MIN_RMSD*1.01, relocate Node %d"
                     " with %d trial orientations and chiral building block"
                     ", RMSD: %.2E",
-                    i, max_n_slices**3, rmsd
+                    i,
+                    max_n_slices**3,
+                    rmsd,
                 )
 
             # Critical error.
@@ -210,7 +262,8 @@ class Builder:
                 logger.info(
                     "Use given permutation for edge slot %d"
                     ", permutation: %s",
-                    e, permutations[e]
+                    e,
+                    permutations[e],
                 )
                 located_bbs[e] = edge_bb
                 continue
@@ -232,11 +285,11 @@ class Builder:
         # Change topology to scaled topology.
         original_topology = topology
         topology, scaling_result = self.scaler.scale(
-                                       topology=topology,
-                                       bbs=located_bbs,
-                                       perms=permutations,
-                                       return_result=True
-                                   )
+            topology=topology,
+            bbs=located_bbs,
+            perms=permutations,
+            return_result=True,
+        )
 
         rmsd_values = []
         # Relocate and translate node building blocks.
@@ -246,8 +299,9 @@ class Builder:
             # Get target.
             target = topology.local_structure(i)
             # Orientation.
-            located_node, rmsd = \
-                locator.locate_with_permutation(target, node_bb, perm)
+            located_node, rmsd = locator.locate_with_permutation(
+                target, node_bb, perm
+            )
             # Translation.
             centroid = topology.atoms.positions[i]
             located_node.set_centroid(centroid)
@@ -260,7 +314,10 @@ class Builder:
                 "Location at node slot %d"
                 ", (node type: %s, node bb: %s)"
                 ", RMSD: %.2E",
-                i, t, node_bb.name, rmsd,
+                i,
+                t,
+                node_bb.name,
+                rmsd,
             )
 
             rmsd_values.append(rmsd)
@@ -324,19 +381,25 @@ class Builder:
             ri = topology.atoms.positions[i]
             rj = topology.atoms.positions[j]
 
-            image = (d - (rj-ri)) @ invc
+            image = (d - (rj - ri)) @ invc
 
             return image
 
+        none_edge_list = []
         # Locate edges.
         logger.info("Start placing edges.")
         c = topology.atoms.cell
         invc = np.linalg.inv(topology.atoms.cell)
-        for e in topology.edge_indices:
+        for i, e in enumerate(topology.edge_indices):
             edge_bb = located_bbs[e]
             # Neglect no edge cases.
             if edge_bb is None:
+                none_edge_list.append(1)
                 continue
+            none_edge_list.append(0)
+
+            # if "rotating_angle_list" in kwargs:
+            #     rotate_edge(edge_bb, kwargs['rotating_angle_list'][i])
 
             n1, n2 = topology.neighbor_list[e]
 
@@ -352,17 +415,40 @@ class Builder:
             r2 = bb2.atoms.positions[a2]
 
             image = calc_image(n1, n2, invc)
-            d = r2 - r1 + image@c
+            d = r2 - r1 + image @ c
 
-            ## This may outside of the unit cell. Should be changed.
-            centroid = r1 + 0.5*d
+            # This may outside of the unit cell. Should be changed.
+            centroid = r1 + 0.5 * d
             perm = permutations[e]
 
-            target = LocalStructure(np.array([r1, r1+d]), [i1, i2])
-            located_edge, rmsd = \
-                locator.locate_with_permutation(target, edge_bb, perm)
+            target = LocalStructure(np.array([r1, r1 + d]), [i1, i2])
+            located_edge, rmsd = locator.locate_with_permutation(
+                target, edge_bb, perm
+            )
+
+            if "rotating_angle_list" in kwargs:
+                rotate_edge(located_edge, kwargs['rotating_angle_list'][i])
 
             located_edge.set_centroid(centroid)
+
+            # Edge representer setting
+            # Change atom symbol to apply space group to edge representer atom at starting edge
+            if "edge_representer" in kwargs and i == first_valid_edge_index:
+                ori_symbol_Ar = located_edge.atoms[
+                    kwargs['edge_representer']
+                ].symbol
+                located_edge.atoms[kwargs['edge_representer']].symbol = 'Ar'
+                located_edge.atoms[kwargs['edge_representer']].tag = i + 1
+            # Set the tag on the edge represnter of the remaining edge as well
+            elif "edge_representer" in kwargs:
+                located_edge.atoms[kwargs['edge_representer']].tag = i + 1
+            # Use another atom symbol to apply the space group when the extra edge is added
+            if "extra" in kwargs and i in kwargs['extra']:
+                ori_symbol_Kr = located_edge.atoms[
+                    kwargs['edge_representer']
+                ].symbol
+                located_edge.atoms[kwargs['edge_representer']].symbol = 'Kr'
+                located_edge.atoms[kwargs['edge_representer']].tag = i + 1
             located_bbs[e] = located_edge
 
             logger.debug(f"Edge {e}, RMSD: {rmsd:.2E}")
@@ -374,9 +460,9 @@ class Builder:
         index_offsets[0] = 0
         for i, bb in enumerate(located_bbs[:-1]):
             if bb is None:
-                index_offsets[i+1] = index_offsets[i] + 0
+                index_offsets[i + 1] = index_offsets[i] + 0
             else:
-                index_offsets[i+1] = index_offsets[i] + bb.n_atoms
+                index_offsets[i + 1] = index_offsets[i] + bb.n_atoms
 
         bb_bonds = []
         bb_bond_types = []
@@ -414,14 +500,17 @@ class Builder:
                 bond_types += ["S", "S"]
                 logger.debug(
                     "Bonds on topology edge %s are connected %s, %s.",
-                    j, bonds[-2], bonds[-1],
+                    j,
+                    bonds[-2],
+                    bonds[-1],
                 )
             else:
                 bonds.append((a1, a2))
                 bond_types += ["S"]
                 logger.debug(
                     "Bonds on topology edge %s are connected %s.",
-                    j, bonds[-1],
+                    j,
+                    bonds[-1],
                 )
 
         bonds = np.array(bonds)
@@ -468,15 +557,10 @@ class Builder:
                 new_bond_types.append(t)
 
         for i, j in XX_bonds:
-            new_bonds.append((
-                X_neighbor_list[i],
-                X_neighbor_list[j]
-            ))
+            new_bonds.append((X_neighbor_list[i], X_neighbor_list[j]))
             new_bond_types.append("S")
 
-        all_bonds = [
-            (new_indices[i], new_indices[j]) for i, j in new_bonds
-        ]
+        all_bonds = [(new_indices[i], new_indices[j]) for i, j in new_bonds]
         all_bonds = np.array(all_bonds)
         all_bond_types = new_bond_types
 
@@ -497,12 +581,76 @@ class Builder:
             wrap = kwargs["wrap"]
 
         framework = Framework(
-            framework_atoms,
-            all_bonds,
-            all_bond_types,
-            info=info,
-            wrap=wrap
+            framework_atoms, all_bonds, all_bond_types, info=info, wrap=wrap
         )
         logger.info("Construction of framework done.")
+
+        # Get space group of topology from json file
+        current_file = Path(__file__).resolve()
+        current_dir = current_file.parent
+        target_file = current_dir / 'database' / 'spacegroup.json'
+        with open(target_file, 'r') as json_file:
+            loaded_dict = json.load(json_file)
+        spacegroup_number = loaded_dict[topology.spacegroup]
+        if "spg" in kwargs:
+            spacegroup_number = kwargs["spg"]
+
+        # Place Ne atoms for space group
+        for i, atom in enumerate(framework.atoms):
+            if (
+                atom.symbol == 'Ar' or atom.symbol == 'Kr'
+            ) and "edge_representer" in kwargs:
+                if atom.symbol == 'Ar':
+                    atom.symbol = ori_symbol_Ar
+                elif atom.symbol == 'Kr':
+                    atom.symbol = ori_symbol_Kr
+                symmetry_operations = (
+                    spglib.get_symmetry_from_database(spacegroup_number)[
+                        'rotations'
+                    ],
+                    spglib.get_symmetry_from_database(spacegroup_number)[
+                        'translations'
+                    ],
+                )
+                atom_position = framework.atoms.get_scaled_positions()[i]
+                new_atom_symbol = 'Ne'
+                new_positions = []
+                for rotation, translation in zip(*symmetry_operations):
+                    new_frac_pos = np.dot(rotation, atom_position) + translation
+                    lattice_vectors = framework.atoms.cell
+                    new_positions.append(np.dot(new_frac_pos, lattice_vectors))
+                for pos in new_positions:
+                    atom = Atoms(new_atom_symbol, positions=[pos])
+                    atom.tag = 42
+                    framework.atoms += atom
+        framework.atoms.set_scaled_positions(
+            framework.atoms.get_scaled_positions() % 1.0
+        )
+
+        # Store the minimum distance to Ne atoms in the min_array
+        min_array = []
+        if "edge_representer" in kwargs:
+            for k in range(1, topology.n_edges + 1):
+                min_distance = float('inf')
+                for i in range(len(framework.atoms)):
+                    for j in range(i + 1, len(framework.atoms)):
+                        if (
+                            framework.atoms[i].tag == k
+                            and framework.atoms[j].symbol == 'Ne'
+                        ) or (
+                            framework.atoms[i].symbol == 'Ne'
+                            and framework.atoms[j].tag == k
+                        ):
+                            distance = framework.atoms.get_distance(
+                                i, j, mic=True
+                            )
+                            if distance < min_distance:
+                                min_distance = distance
+                min_array.append(min_distance)
+            for i, n in enumerate(none_edge_list):
+                if n == 1:
+                    min_array[i] = 0
+
+        framework.min_array = min_array
 
         return framework
