@@ -54,10 +54,33 @@ pip install pormake
 pip install git+https://github.com/Sangwon91/PORMAKE.git
 ```
 
-#### 2. Editable installtion
+#### 2. Editable installation
 ```
 git clone https://github.com/Sangwon91/PORMAKE.git
-pip install -e PORMAKE
+pip install -e ./PORMAKE
+```
+
+### 3. Using UV
+```
+# From PyPI
+uv add pormake
+# or from Github repository
+uv add git+https://github.com/Sangwon91/PORMAKE.git
+# or editable installation
+git clone https://github.com/Sangwon91/PORMAKE.git
+cd PORMAKE
+uv sync
+```
+
+### <span style="color: red">4. Troubleshooting</span>
+If you encounter version conflicts with NumPy or other dependencies, try the following installation commands. These examples demonstrate how to specify a NumPy version.
+
+```
+pip install "numpy<2" git+https://github.com/Sangwon91/PORMAKE.git
+# or
+pip install "numpy<2" pormake
+# or
+pip install "numpy<2" && pip install -e ./PORMAKE
 ```
 
 ## Examples
