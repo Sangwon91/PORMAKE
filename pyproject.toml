@@ -8,12 +8,11 @@ authors = [
     { name = "Sangwon Lee", email = "lsw91.main@gmail.com" }
 ]
 classifiers = [
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11"
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 dependencies = [
     "ase>=3.23.0",
     "jax[cpu]>=0.4.13",
@@ -42,4 +41,6 @@ python-preference = "only-managed"
 [dependency-groups]
 dev = [
     "notebook>=7.3.2",
+    "pytest>=8.0",
+    "pytest-xdist>=3.5",
 ]
