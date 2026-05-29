@@ -299,6 +299,18 @@ MOF.view()
 
 <img src="docs/assets/chimera.png" width=400>
 
+The same per-slot assignment works for **edges (linkers)**, not just nodes. Slots that share an edge type are *not* locked together, so you can give individual edge slots different linkers as long as their connectivity matches the slot. Use `tbo.describe()` to read the `slot indices` listed under each edge type, then override those entries in `bbs`.
+
+```python
+bbs = builder.make_bbs_by_type(topology=tbo, node_bbs=node_bbs, edge_bbs=edge_bbs)
+
+# All (0, 1) edges default to E41; swap a few specific edge slots to E12.
+for i in [56, 57, 58]:
+    bbs[i] = database.get_bb("E12").copy()
+
+MOF = builder.build(topology=tbo, bbs=bbs)
+```
+
 ### 4. Calculation of RMSD between node and building block
 
 The root-mean-square deviation of atomic positions (RMSD) between node and building block can be used as a criterion for determining whether a particular building block can be located to a particular node.
