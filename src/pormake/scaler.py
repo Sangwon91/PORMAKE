@@ -1,3 +1,13 @@
+"""Cell rescaling that fits a net to its building blocks.
+
+This module defines :class:`Scaler`, the geometry-optimization stage of
+the build pipeline. An abstract net has arbitrary edge lengths, so before
+real molecular fragments can be placed the unit cell and slot positions
+must be resized to match the actual sizes of the chosen building blocks.
+:class:`Scaler` formulates that as a least-squares problem over node-edge
+angles and lengths and solves it with JAX-computed gradients driving a
+SciPy L-BFGS-B optimizer.
+"""
 from collections import defaultdict
 from itertools import product
 
@@ -12,24 +22,78 @@ from .utils import bound_values
 
 
 class Scaler:
-    """
-    Scale topology using given nodes and edges building blocks information.
+    """Resize an abstract net so chosen building blocks fit without strain.
+
+    A :class:`~pormake.topology.Topology` read from a ``.cgd`` file is a
+    purely abstract net: its unit cell and node spacing are arbitrary
+    and do not reflect the real sizes of the molecular fragments that
+    will be placed on it. ``Scaler`` solves that mismatch. Given the
+    building blocks assigned to each node and edge, it rescales the
+    topology's unit cell and node positions so that node-to-node
+    distances and inter-edge angles agree with the actual building-block
+    geometry. Producing a net whose dimensions match the fragments is
+    what makes the final framework chemically reasonable rather than
+    distorted.
+
+    Internally, :meth:`scale` derives a set of target dot products
+    between connection-point vectors (encoding both bond lengths and
+    angles) from the building blocks, then runs an L-BFGS-B geometry
+    optimization (with JAX-computed gradients) over the scaled atomic
+    positions and the 3x3 cell matrix to match those targets. It
+    finishes by rebuilding the topology's neighbor list with the
+    rescaled edge geometry.
+
+    Parameters
+    ----------
+    length_weight : float, optional
+        Relative weight given to length (self dot-product) terms versus
+        angle (cross dot-product) terms in the optimization objective.
+        Values above 1 emphasize matching edge lengths over angles.
+
+    Attributes
+    ----------
+    length_weight : float
+        The stored length-versus-angle weighting used by :meth:`scale`.
     """
 
     def __init__(self, length_weight=1.0):
-        """
-        Inputs:
-            topology: topology
-            bbs: list of BuildingBlocks. The order of bb have to be same as
-                topology.
-            permutations
-        """
+        """Store the length-versus-angle weighting for the objective."""
         self.length_weight = length_weight
 
     def scale(self, topology, bbs, perms, return_result=False):
-        """
-        Scale topology using building block information.
-        Both lengths and angles are optimized during the process.
+        """Rescale a topology to match its assigned building blocks.
+
+        Forms length/angle targets from the building blocks placed on
+        each node and edge, then optimizes the scaled atomic positions
+        and the unit-cell matrix so the net's geometry matches those
+        targets. The returned topology is a rescaled copy whose neighbor
+        list has been rebuilt with the new edge centers, ready for the
+        builder to assemble the final framework. Both edge lengths and
+        node-edge-node angles are optimized simultaneously.
+
+        Parameters
+        ----------
+        topology : pormake.topology.Topology
+            The abstract net to rescale. Not modified in place.
+        bbs : list of pormake.building_block.BuildingBlock or None
+            Building blocks indexed by slot. Node slots must hold a
+            building block; edge slots may be ``None`` when no edge
+            building block is present.
+        perms : list
+            Per-node connection-point permutations, indexed by slot,
+            describing how each building block's connection points map
+            onto the node's edges.
+        return_result : bool, optional
+            If ``True``, also return the raw SciPy optimization result.
+
+        Returns
+        -------
+        scaled_topology : pormake.topology.Topology
+            A rescaled copy of ``topology`` with updated cell, positions,
+            and neighbor list.
+        result : scipy.optimize.OptimizeResult
+            The optimizer result, returned only when ``return_result``
+            is ``True``.
         """
         logger.debug("Scaler.scale starts.")
 
@@ -196,12 +260,24 @@ class Scaler:
 
         # Helper functions for calculation of objective function.
         def calc_dots(s, c):
-            """
-            Inputs:
-                s: scaled positions.
-                c: cell matrix (row is a lattice vector).
-            External variables:
-                topology, pairs, image, ij, ik, ij_image, ik_image.
+            """Compute dot products of edge-vector pairs at every node.
+
+            Closes over the enclosing-scope triple-index arrays ``ij``,
+            ``ik`` and their periodic images ``ij_image``, ``ik_image``
+            to build the Cartesian edge vectors and their pairwise dots,
+            the quantities compared against ``target_dots``.
+
+            Parameters
+            ----------
+            s : jax.numpy.ndarray
+                Scaled (fractional) positions, shape ``(n, 3)``.
+            c : jax.numpy.ndarray
+                Cell matrix, one lattice vector per row.
+
+            Returns
+            -------
+            jax.numpy.ndarray
+                Dot product for each ``(ij, ik)`` edge-vector pair.
             """
             # diff becames n x n x 3 tensor with element of
             # diff[i, j, :] = si - sj.
@@ -215,11 +291,25 @@ class Scaler:
             return dots
 
         def objective(s, c):
+            """Return the weighted mean-squared dot-product error.
+
+            Compares the current geometry's dot products from
+            :func:`calc_dots` against the enclosing-scope ``target_dots``
+            and reduces them to a single scalar using ``weights``; this
+            is the quantity minimized by the optimizer.
+            """
             dots = calc_dots(s, c)
             return jnp.mean(jnp.square(dots - target_dots) * weights)
 
         # Functions for scipy interface.
         def fun(x):
+            """Evaluate the objective from a flat parameter vector.
+
+            Unpacks the flat vector ``x`` (positions followed by the 9
+            cell entries) into ``s`` and ``c`` and forwards them to
+            :func:`objective`. Uses the enclosing-scope ``topology`` for
+            the slot count.
+            """
             n = topology.n_slots
 
             s = jnp.reshape(x[:-9], (n, 3))
@@ -232,9 +322,19 @@ class Scaler:
         jac = jax.jit(jax.grad(fun))
 
         def fun_numpy(x):
+            """Evaluate :func:`fun` and cast the result to NumPy float64.
+
+            Adapts the JAX objective to the plain-float interface that
+            :func:`scipy.optimize.minimize` expects.
+            """
             return np.array(fun(x), dtype=np.float64)
 
         def jac_numpy(x):
+            """Evaluate the JAX gradient ``jac`` as a NumPy float64 array.
+
+            Adapts the JIT-compiled gradient of :func:`fun` to the
+            array interface SciPy's L-BFGS-B optimizer requires.
+            """
             return np.array(jac(x), dtype=np.float64)
 
         # Prepare geometry optimization.

@@ -1,5 +1,10 @@
-"""Experimental MOF Decomposer module. It's refactored from the legacy code used
-in the PORMAKE paper. It is an experimental feature and may not be stable.
+"""Decompose an existing MOF back into building blocks.
+
+This experimental subpackage runs the build pipeline in reverse: given a
+finished MOF crystal it identifies the metal nodes and organic linkers,
+cuts the bonds between them, and emits capped fragments that can be reused
+as PORMAKE building blocks. It is refactored from the legacy code used in
+the PORMAKE paper and may not be stable.
 """
 import collections
 import copy
@@ -13,10 +18,13 @@ from ...utils import METAL_LIKE, covalent_neighbor_list
 
 
 def hash_atoms(atoms: ase.Atoms, complexity: int = 6):
-    """Hashes an ase.Atoms object into a unique integer. The hash is based on
-    the adjacency matrix of the covalent bonds and the atomic numbers of the
-    atoms. The hash is invariant to the order of the atoms in the atoms object.
-    It is an experimental feature and may not be stable.
+    """Hash an ase.Atoms object into a near-unique integer fingerprint.
+
+    The fingerprint is built from the covalent-bond adjacency matrix and
+    the atomic numbers, making it invariant to atom ordering. It lets the
+    decomposer group chemically identical fragments so that recurring
+    building blocks are recognised as the same piece. Experimental and may
+    not be stable.
 
     Parameters
     ----------
@@ -47,10 +55,12 @@ def hash_atoms(atoms: ase.Atoms, complexity: int = 6):
 
 
 def estimate_atoms_dimension(atoms: ase.Atoms):
-    """Estimates the dimension of the atoms object in periodic system. Is is
-    used to estimate the dimension of MOFs or building blocks in the MOF. For
-    current version of PORMAKE, only building blocks with 0 dimension are
-    supported. It is an experimental feature and may not be stable.
+    """Estimate the periodic dimensionality (0-3) of an atoms object.
+
+    Used to tell a finite molecular building block (0D) apart from a chain
+    (1D), layer (2D), or framework (3D); the current PORMAKE only supports
+    0D building blocks, so this guards fragment merging during
+    decomposition. Experimental and may not be stable.
 
     Parameters
     ----------
@@ -139,38 +149,80 @@ def remove_pbc_cuts(atoms):
 
 
 class MOFDecomposer:
+    """Decompose an existing MOF back into building blocks.
+
+    This is the inverse of the PORMAKE assembly pipeline: instead of
+    placing building blocks onto a topology to grow a framework, it
+    reads an assembled MOF from a CIF and cuts it apart into the
+    inorganic nodes and organic linkers it was built from. The metal
+    coordination bonds are treated as the seams between fragments;
+    severing them yields the individual building blocks, and the
+    severed bonds (the *connecting bonds*) record where each fragment
+    reconnected to its neighbours. Those break points are later capped
+    with dummy ``X`` atoms so the extracted fragments carry the same
+    connection-point convention as native PORMAKE building blocks.
+
+    It is an experimental feature and may not be stable.
+
+    Parameters
+    ----------
+    cif : str
+        The path to the CIF file of the MOF.
+    X_type : str
+        The symbol used for the dummy connection-point atom appended at
+        each break point. It is used to identify the connection sites.
+        Default is ``'X'``.
+
+    Attributes
+    ----------
+    atoms : ase.Atoms
+        The MOF structure read from the CIF (mutated in place by
+        ``cleanup``).
+    name : str
+        The CIF file stem, used to name the structure.
+    bb_found : bool
+        Whether building blocks and connecting bonds have been
+        computed yet (drives lazy evaluation).
+    X_type : str
+        Symbol used for the connection-point dummy atoms.
+
+    TODO:
+        * Custom bond information (connectivity and bond types).
+    """
+
     def __init__(self, cif, X_type='X'):
-        """MOF decomposer class. It is an experimental feature and may not be
-        stable.
-
-        TODO:
-            * Custom bond information (connectivity and bond types).
-
-        Parameters
-        ----------
-        cif : str
-            The path to the CIF file of the MOF.
-        X_type : str
-            The symbol of the X atom. It is used to identify the connection
-            sites. Default is 'X'.
-        """
+        """Read the MOF from a CIF file."""
         self.atoms = ase.io.read(cif)
         self.name = Path(cif).stem
         self.bb_found = False
         self.X_type = X_type
 
     def view(self, *args, **kwargs):
+        """Open the MOF structure in an interactive ASE viewer.
+
+        Convenience helper for visually inspecting the loaded
+        structure, e.g. before or after ``cleanup``.
+
+        Parameters
+        ----------
+        *args, **kwargs
+            Forwarded verbatim to ``ase.visualize.view``.
+        """
         ase.visualize.view(self.atoms, *args, **kwargs)
 
     def cleanup(self, remove_interpenetration=True):
-        """Removes interpenetration and isolated molecules from the MOF.
-        It is an experimental feature and may not be stable.
+        """Remove interpenetration and isolated molecules from the MOF.
+
+        A clean single framework is a precondition for reliable
+        decomposition, so this prunes the structure down to the relevant
+        connected component(s) before fragments are searched for.
+        Experimental and may not be stable.
 
         Parameters
         ----------
         remove_interpenetration : bool
-            If True, removes interpenetration. If False, removes only isolated
-            molecules.
+            If True, keep only the largest framework. If False, drop solvent
+            and isolated molecules but keep equal-sized interpenetrating nets.
         """
         # Get bond except metals.
         I, J, _ = covalent_neighbor_list(self.atoms)
@@ -197,12 +249,17 @@ class MOFDecomposer:
 
     @property
     def building_block_atom_indices(self):
-        """Returns the atom indices of the building blocks.
+        """Group the MOF's atoms into the fragments to be extracted.
+
+        This is the core decomposition result: each set is one building
+        block (a node or a linker), and ``make_building_block_atoms``
+        turns each set into a capped fragment. Computed lazily on first
+        access.
 
         Returns
         -------
-        list[set]:
-            The list of atom indices of the building blocks.
+        list[set]
+            One set of atom indices per detected building block.
         """
         if not self.bb_found:
             self._find_building_block_atom_indices()
@@ -210,17 +267,34 @@ class MOFDecomposer:
 
     @property
     def connecting_sites(self):
+        """Return the atom indices that lie on a connecting bond.
+
+        These are the atoms at the seams between fragments, i.e. the
+        endpoints of the connecting bonds. ``make_building_block_atoms``
+        uses them to decide where to graft the dummy ``X`` connection
+        points onto an extracted fragment.
+
+        Returns
+        -------
+        list[int]
+            Sorted, de-duplicated atom indices appearing in any
+            connecting bond.
+        """
         return np.unique(self.connecting_bonds).tolist()
 
     @property
     def connecting_bonds(self):
-        """Returns the indices of connecting bonds between metal nodes and
-        organic linkes of the MOF.
+        """Return the node-linker bonds that are cut to separate fragments.
+
+        These are the seams of the MOF: severing them splits the structure
+        into the individual building blocks, and their endpoints become the
+        connection points (``X`` atoms) grafted onto each extracted
+        fragment.
 
         Returns
         -------
         list[tuple[int, int]]
-            The list of connecting bonds.
+            Atom-index pairs, one per connecting bond.
         """
 
         if not self.bb_found:
@@ -228,8 +302,10 @@ class MOFDecomposer:
         return self._connecting_bonds
 
     def extract_building_blocks(self):
-        """Extracts building blocks from the MOF. Building blocks are stored in
-        the self.building_blocks property.
+        """Extract every building block and cache them for reuse.
+
+        Materializes a capped fragment for each detected building block and
+        stores the list on the ``building_blocks`` property.
         """
         n_bbs = len(self.building_block_atom_indices)
         self._building_blocks = [
@@ -238,19 +314,48 @@ class MOFDecomposer:
 
     @property
     def building_blocks(self):
-        """Returns the building blocks of the MOF.
+        """Return the extracted building blocks, computing them on demand.
+
+        This is the decomposer's payoff: the capped fragments that PORMAKE
+        could feed back into the forward build pipeline as reusable
+        building blocks.
 
         Returns
         -------
         list[ase.Atoms]
-            The list of building blocks in ase.Atoms format.
+            One capped fragment per building block.
         """
         if not hasattr(self, '_building_blocks'):
             self.extract_building_blocks()
         return self._building_blocks
 
     def make_building_block_atoms(self, i):
-        """Makes building block atoms from the MOF."""
+        """Assemble the ``i``-th building block as a capped fragment.
+
+        Gathers the atoms of the requested fragment, undoes any
+        periodic-boundary cuts so the fragment is contiguous, and then
+        caps each connecting site with a dummy ``X`` atom placed
+        halfway along the severed bond. The result mirrors the
+        connection-point convention of native PORMAKE building blocks,
+        so the extracted fragment can be reused as one.
+
+        Parameters
+        ----------
+        i : int
+            Index into ``building_block_atom_indices`` selecting which
+            fragment to build.
+
+        Returns
+        -------
+        ase.Atoms
+            The contiguous fragment with ``X_type`` connection-point
+            atoms appended at each break point.
+
+        Raises
+        ------
+        AssertionError
+            If ``i`` is out of range for the discovered fragments.
+        """
         assert len(self.building_block_atom_indices) > i
 
         indices = list(self.building_block_atom_indices[i])
@@ -302,8 +407,20 @@ class MOFDecomposer:
         return atoms
 
     def _find_building_block_atom_indices(self):
-        """Finds building blocks and connecting bonds of the MOF. It is an
-        experimental feature and may not be stable."""
+        """Partition the MOF atoms into building-block fragments.
+
+        Core of the decomposition. Builds the covalent-bond graph,
+        removes the metal-coordination edges to expose candidate
+        fragments, then identifies the bridge bonds linking metal
+        clusters to organic linkers as the *connecting bonds* that mark
+        where fragments meet. Self-linking linkers that reconnect to a
+        single parent are merged back in when doing so does not change
+        the fragment's periodic dimension. On completion this caches
+        ``_building_block_atom_indices`` and ``_connecting_bonds`` and
+        sets ``bb_found``.
+
+        It is an experimental feature and may not be stable.
+        """
         # Get full bond information.
         I, J, _ = covalent_neighbor_list(self.atoms)
         bond_list = [[] for _ in range(len(self.atoms))]
@@ -449,6 +566,11 @@ class MOFDecomposer:
                 index_to_bb[j] = i
 
         def is_valid(bridge):
+            """Keep only bridges that still join two distinct fragments.
+
+            After fragment merging some bridges become internal; reads the
+            enclosing ``index_to_bb`` map to drop those.
+            """
             i, j = bridge
             return index_to_bb[i] != index_to_bb[j]
 
