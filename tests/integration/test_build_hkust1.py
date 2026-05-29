@@ -2,8 +2,6 @@ from collections import Counter
 
 import pytest
 
-import pormake
-
 
 @pytest.fixture(scope="module")
 def hkust1(database, builder):

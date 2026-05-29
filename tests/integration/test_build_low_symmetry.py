@@ -2,8 +2,6 @@ from collections import Counter
 
 import pytest
 
-import pormake
-
 
 @pytest.fixture(scope="module")
 def low_symmetry_mof(database, builder):
