@@ -4,6 +4,7 @@ import pormake
 
 
 def make_topology(database, name):
+    # Direct cgd construction avoids the .pickle side effect of database.get_topo().
     return pormake.Topology(database.topo_dir / f"{name}.cgd")
 
 
@@ -13,7 +14,7 @@ def test_rmsd_low_for_matching_node(database, locator):
     acs = make_topology(database, "acs")
     n198 = database.get_bb("N198")
     rmsd = locator.calculate_rmsd(acs.unique_local_structures[0], n198)
-    assert rmsd == pytest.approx(0.02, abs=0.05)
+    assert rmsd == pytest.approx(0.02, abs=0.02)
 
 
 def test_rmsd_high_for_mismatching_node(database, locator):
