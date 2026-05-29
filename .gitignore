@@ -3,8 +3,6 @@
 build
 dist
 *.egg-*
-test*
 *.log
 *.pickle
-*.log
 .ipynb_checkpoints
