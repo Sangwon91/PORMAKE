@@ -2,7 +2,7 @@
 
 - 작성일: 2026-05-28
 - 작성자: Sangwon Lee (with Claude)
-- 상태: Draft → User Review
+- 상태: 구현 완료 (Stage 1~4 머지: PR #38/#46/#47/#48)
 
 ## 배경
 
