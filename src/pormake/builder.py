@@ -1,3 +1,21 @@
+"""Assemble building blocks onto a topology into a Framework.
+
+This module hosts :class:`Builder`, the orchestrator that turns an
+abstract net (a :class:`~pormake.topology.Topology`) plus a set of
+molecular fragments (:class:`~pormake.building_block.BuildingBlock`)
+into a concrete periodic structure (:class:`~pormake.framework.Framework`).
+
+The build proceeds in stages: orient each node building block onto its
+slot with the :class:`~pormake.locator.Locator` (checking against a
+per-(node-type, bb) minimum RMSD and falling back to a chiral copy when
+a fit is poor); record trivial edge permutations; rescale the topology
+cell to the real building-block sizes with the
+:class:`~pormake.scaler.Scaler`; relocate and translate the nodes onto
+the scaled positions; lay edge linkers along the scaled edges; then find
+all bonds, drop the "X" connection-point atoms while fusing the bonds
+they implied, and wrap everything into a Framework.
+"""
+
 from collections import defaultdict
 
 import numpy as np
@@ -11,7 +29,37 @@ from .scaler import Scaler
 
 # bb: building block.
 class Builder:
+    """Orchestrate assembly of a framework from blocks and a topology.
+
+    Holds the two pluggable strategy objects the assembly depends on --
+    a :class:`~pormake.locator.Locator` for orienting building blocks
+    onto slots and a :class:`~pormake.scaler.Scaler` for resizing the
+    topology cell -- and exposes :meth:`build` (and the per-type
+    convenience wrappers) to run the full pipeline. Keeping locator and
+    scaler injectable lets callers swap matching/scaling behavior without
+    touching the orchestration logic.
+
+    Parameters
+    ----------
+    locator : Locator, optional
+        Strategy for finding the best orientation and permutation of a
+        building block on a slot. A default :class:`Locator` is created
+        when omitted.
+    scaler : Scaler, optional
+        Strategy for rescaling the topology unit cell to match real
+        building-block sizes. A default :class:`Scaler` is created when
+        omitted.
+
+    Attributes
+    ----------
+    locator : Locator
+        The orientation/permutation matcher used during the build.
+    scaler : Scaler
+        The cell-rescaling strategy used during the build.
+    """
+
     def __init__(self, locator=None, scaler=None):
+        """Store the locator and scaler, creating defaults if needed."""
         if locator is None:
             self.locator = Locator()
         else:
@@ -23,14 +71,36 @@ class Builder:
             self.scaler = scaler
 
     def make_bbs_by_type(self, topology, node_bbs, edge_bbs=None):
-        """
-        Make bbs for Builder.build by node and edgy type.
+        """Build the per-slot building-block list from type maps.
 
-        Args:
-            node_bbs: dict of list like containing node building blocks.
-                The key is the type of node (integer).
-            edge_bbs: dict contrainig edge building blocks. The key is the
-                type of edge (tuple of two interges).
+        Expands compact, type-keyed dictionaries into the dense
+        slot-indexed list that :meth:`build` expects, copying each
+        building block so every slot owns an independent instance.
+        Specifying blocks by type (rather than per slot) is the
+        ergonomic way to describe a structure, since all nodes of the
+        same type and all edges of the same type usually share a block.
+        Edge types absent from ``edge_bbs`` are logged and left empty
+        (``None``), producing direct node-to-node bonds.
+
+        Parameters
+        ----------
+        topology : Topology
+            Topology whose slots are being populated; supplies the node
+            and edge indices and their types.
+        node_bbs : dict
+            Maps a node type (int) to the building block to place on
+            every node of that type.
+        edge_bbs : dict, optional
+            Maps an edge type (a tuple of two ints) to the linker
+            building block for those edges. A value of ``None`` for a
+            type leaves those edges empty. Defaults to no edge blocks.
+
+        Returns
+        -------
+        list
+            Length ``topology.n_slots`` list whose entry ``i`` is the
+            (copied) building block for slot ``i``, or ``None`` for empty
+            edge slots.
         """
         bbs = [None] * topology.n_slots
 
@@ -60,25 +130,84 @@ class Builder:
         return bbs
 
     def build_by_type(self, topology, node_bbs, edge_bbs=None, **kwargs):
+        """Assemble a framework from type-keyed building-block maps.
+
+        Convenience wrapper that turns the type-keyed ``node_bbs`` and
+        ``edge_bbs`` dictionaries into a per-slot list via
+        :meth:`make_bbs_by_type` and forwards it to :meth:`build`. This
+        is the usual public entry point for users who think in terms of
+        node and edge *types* rather than individual slots.
+
+        Parameters
+        ----------
+        topology : Topology
+            Net the framework is assembled on.
+        node_bbs : dict
+            Maps node type (int) to its building block.
+        edge_bbs : dict, optional
+            Maps edge type (tuple of two ints) to its linker building
+            block. Defaults to no edge blocks.
+        **kwargs
+            Forwarded to :meth:`build` (e.g. ``accuracy``, ``wrap``,
+            ``permutations``).
+
+        Returns
+        -------
+        Framework
+            The assembled framework.
+        """
         bbs = self.make_bbs_by_type(topology, node_bbs, edge_bbs)
         return self.build(topology, bbs, **kwargs)
 
     def build(self, topology, bbs, permutations=None, **kwargs):
-        """
-        The node_bbs must be given with proper order.
-        Same as node type order in topology.
+        """Assemble a framework from a per-slot list of building blocks.
 
-        Args:
-            topology:
+        Runs the full assembly pipeline. For each node slot it finds the
+        best orientation and connection-point permutation via the
+        locator, comparing the achieved RMSD against a cached minimum for
+        the (node type, building block) pair and retrying with higher
+        accuracy and, if needed, a chiral copy of the block when the fit
+        is more than 1% above that minimum. Edge slots are recorded with
+        a trivial permutation. The topology cell is then scaled to the
+        real block sizes, nodes are relocated and translated onto the
+        scaled positions, and edge linkers are laid along the scaled
+        edges. Finally all intra- and inter-block bonds are collected,
+        the "X" connection-point atoms are removed while the bonds they
+        implied are fused, and the result is returned as a Framework.
 
-            bbs: a list like obejct containing building blocks.
-                bbs[i] contains a bb for node[i] if i in topology.node_indices
-                or edge[i] if i in topology.edge_indices.
+        Parameters
+        ----------
+        topology : Topology
+            Net to assemble on. Node building blocks must correspond to
+            the topology's node-type ordering.
+        bbs : list
+            Length ``topology.n_slots`` sequence where ``bbs[i]`` is the
+            building block for node ``i`` (if ``i`` is a node index) or
+            edge ``i`` (if an edge index). ``None`` leaves an edge empty.
+        permutations : dict, optional
+            Maps a slot index to a pre-determined connection-point
+            permutation, bypassing the locator's search for that slot.
+            Defaults to no pre-set permutations.
+        **kwargs
+            ``accuracy`` : int
+                Euler-angle grid resolution for high-accuracy
+                relocation (``max_n_slices``); default 6.
+            ``wrap`` : bool
+                Whether to wrap the framework into the unit cell;
+                default ``True``.
 
-            permutations:
+        Returns
+        -------
+        Framework
+            The assembled periodic framework, with bonds, bond types,
+            and build metadata in ``info``.
 
-        Return:
-            Framework object.
+        Raises
+        ------
+        Exception
+            If a node placement yields an RMSD below 99% of the cached
+            minimum (with that minimum above ``1e-3``), indicating the
+            minimum RMSD was computed incorrectly.
         """
 
         # Parse keyword arguments.
@@ -288,12 +417,23 @@ class Builder:
 
         # Thie helpers are so verbose. Anoying.
         def find_matched_atom_indices(e):
-            """
-            Inputs:
-                e: Edge index.
+            """Return the two connection-point atoms an edge bonds to.
 
-            External variables:
-                original_topology, located_bbs, permutations.
+            For edge ``e``, locate within each adjacent node block the
+            connection-point atom that faces the edge, so a linker can be
+            bonded to it. Reads the enclosing-scope variables
+            ``original_topology``, ``located_bbs``, and ``permutations``.
+
+            Parameters
+            ----------
+            e : int
+                Edge slot index in the (unscaled) topology.
+
+            Returns
+            -------
+            a1, a2 : int
+                Atom indices, within each neighboring node block, of the
+                connection points matched to this edge's two ends.
             """
             topology = original_topology
 
@@ -329,10 +469,26 @@ class Builder:
             return a1, a2
 
         def calc_image(ni, nj, invc):
-            """
-            Calculate image number.
-            External variables:
-                topology.
+            """Compute the periodic image offset between two neighbors.
+
+            Determine the integer unit-cell translation separating the
+            two node ends of an edge, so an edge that wraps across a cell
+            boundary is placed correctly. Reads the enclosing-scope
+            ``topology``.
+
+            Parameters
+            ----------
+            ni, nj : Neighbor
+                The two neighbor records (node ends) of the edge.
+            invc : numpy.ndarray
+                Inverse of the topology cell matrix, used to convert the
+                Cartesian offset into fractional (image) units.
+
+            Returns
+            -------
+            numpy.ndarray
+                The ``(3,)`` periodic image vector (integer-valued) of
+                ``nj`` relative to ``ni``.
             """
             # Calculate image.
             # d = d_{ij}
@@ -474,6 +630,12 @@ class Builder:
             count += 1
 
         def is_X(i):
+            """Return whether atom ``i`` is an "X" connection point.
+
+            Reads the enclosing-scope ``framework_atoms``; used to
+            classify bonds while fusing and removing the dummy
+            connection-point atoms.
+            """
             return framework_atoms[i].symbol == "X"
 
         XX_bonds = []

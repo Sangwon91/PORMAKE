@@ -1,3 +1,18 @@
+"""I/O and geometry helpers shared across the PORMAKE pipeline.
+
+This module collects the low-level utilities that translate between the
+file formats PORMAKE consumes (``.cgd`` nets, building-block ``.xyz``
+files) and the in-memory :class:`ase.Atoms` representation, plus small
+geometric helpers used during assembly and a CIF writer for individual
+molecules.
+
+It also defines the module-level constant ``METAL_LIKE``: a list of
+element symbols treated as "metal-like". It is used elsewhere to detect
+which nodes correspond to metal clusters when classifying building
+blocks, since metal nodes and organic linkers play different roles in a
+Metal-Organic Framework.
+"""
+
 from pathlib import Path
 
 import ase
@@ -106,8 +121,25 @@ METAL_LIKE = [
 
 
 def bound_values(x, eps=1e-4):
-    """
-    Add description.
+    """Nudge fractional coordinates away from the exact cell boundary.
+
+    Values that sit essentially at 0 or 1 are pushed inward by ``eps``.
+    Fractional coordinates lying exactly on a periodic boundary cause
+    ambiguous wrapping and edge-case artifacts when neighbor lists are
+    rebuilt, so this clamp keeps positions strictly inside ``(0, 1)``.
+
+    Parameters
+    ----------
+    x : numpy.ndarray
+        Array of fractional coordinates.
+    eps : float, optional
+        Minimum distance to keep from the 0 and 1 boundaries.
+
+    Returns
+    -------
+    numpy.ndarray
+        Coordinates with values near 0 replaced by ``eps`` and values
+        near 1 replaced by ``1 - eps``.
     """
     x = np.where(np.abs(x - 0) < eps, np.full_like(x, 0 + eps), x)
     x = np.where(np.abs(x - 1) < eps, np.full_like(x, 1 - eps), x)
@@ -118,6 +150,32 @@ def bound_values(x, eps=1e-4):
 def covalent_neighbor_list(
     atoms, scale=1.2, neglected_species=[], neglected_indices=[]
 ):
+    """Build a bonded neighbor list from scaled covalent radii.
+
+    Wraps :func:`ase.neighborlist.neighbor_list` using per-atom cutoffs
+    derived from ASE's natural (covalent) radii, scaled by ``scale`` so
+    that atoms within roughly bonding distance are treated as
+    neighbors. Selected species or indices can be excluded from bonding
+    by zeroing their cutoff, which is useful for ignoring connection
+    markers or specific atoms when inferring molecular bonds.
+
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        Atoms to analyze.
+    scale : float, optional
+        Multiplier applied to each natural cutoff radius.
+    neglected_species : list of str, optional
+        Element symbols whose atoms should not form bonds.
+    neglected_indices : list of int, optional
+        Atom indices that should not form bonds.
+
+    Returns
+    -------
+    tuple of numpy.ndarray
+        The ``("ijD")`` neighbor-list arrays: first-atom indices,
+        second-atom indices, and the distance vectors between them.
+    """
     cutoffs = natural_cutoffs(atoms)
     cutoffs = [scale * c for c in cutoffs]
     # Remove radii to neglect them.
@@ -132,8 +190,35 @@ def covalent_neighbor_list(
 
 
 def read_cgd(filename, node_symbol="C", edge_center_symbol="O"):
-    """
-    Read cgd format and return topology as ase.Atoms object.
+    """Parse a ``.cgd`` net file into an :class:`ase.Atoms` topology.
+
+    A ``.cgd`` file describes an abstract net by its space group, cell
+    parameters, symmetry-unique node positions (with coordination
+    numbers), and edges. This function expands the asymmetric unit by
+    the space group via :mod:`pymatgen`, places a placeholder atom at
+    every node and edge center, removes symmetry-generated duplicates,
+    and returns the result as an :class:`ase.Atoms` object that the rest
+    of PORMAKE treats as the topology skeleton.
+
+    Nodes are tagged with non-negative ``type`` values and edge centers
+    with negative ones, and each site carries its coordination number
+    ``cn`` so building blocks can later be matched by connectivity.
+
+    Parameters
+    ----------
+    filename : str or pathlib.Path
+        Path to the ``.cgd`` net file.
+    node_symbol : str, optional
+        Element symbol used as a placeholder for net nodes.
+    edge_center_symbol : str, optional
+        Element symbol used as a placeholder for edge centers.
+
+    Returns
+    -------
+    ase.Atoms
+        The topology, with ``tags`` encoding site types and ``info``
+        holding the space group, name, and per-site coordination
+        numbers.
     """
     with open(filename, "r") as f:
         # Neglect "CRYSTAL" and "END"
@@ -264,6 +349,34 @@ def read_cgd(filename, node_symbol="C", edge_center_symbol="O"):
 
 
 def read_budiling_block_xyz(bb_file):
+    """Parse a building-block ``.xyz`` file into an :class:`ase.Atoms`.
+
+    Reads an extended ``.xyz`` describing a molecular building block:
+    each atom line carries an element symbol, Cartesian position, and an
+    optional partial charge. Dummy ``"X"`` atoms mark the connection
+    points where the fragment attaches to neighboring blocks, and their
+    indices are recorded so the assembly step can align them onto a
+    topology slot. Any lines beyond the atom block are parsed as bonds
+    (atom-index pairs plus a bond type) for CIF export.
+
+    Parameters
+    ----------
+    bb_file : str or pathlib.Path
+        Path to the building-block ``.xyz`` file.
+
+    Returns
+    -------
+    ase.Atoms
+        The building block, whose ``info`` dict holds the connection
+        point indices (``"cpi"``), name, and optional ``bonds`` and
+        ``bond_types``. Per-atom partial charges are stored as the
+        atoms' initial charges.
+
+    Notes
+    -----
+    The misspelled function name (``budiling``) is intentional and kept
+    for backward compatibility.
+    """
     name = Path(bb_file).stem
 
     with open(bb_file, "r") as f:
@@ -322,17 +435,29 @@ def read_budiling_block_xyz(bb_file):
 
 
 def write_molecule_cif(filename, atoms, bond_pairs, bond_types):
-    """
-    Write cif for the molecule structures.
+    """Write a single molecule to a P1 CIF file with bonds.
 
-    Args:
-        filename: file name.
-        atoms: ase.Atoms object.
-        bond_pairs: list of bond paris. contains (i, j).
-        bond_types: list of bond types. contains one of "S", "D", "T", "A".
+    Places the molecule, centered on its center of mass, inside a cubic
+    ``P1`` cell sized to comfortably enclose it, then writes fractional
+    coordinates, partial charges, and the supplied bond list. This is
+    used to export an individual building block or fragment for
+    inspection in crystallographic viewers.
 
-    Returns:
-        None
+    Parameters
+    ----------
+    filename : str or pathlib.Path
+        Output path; a ``.cif`` suffix is enforced.
+    atoms : ase.Atoms
+        The molecule to write.
+    bond_pairs : list of tuple of int
+        Bonded atom-index pairs ``(i, j)``.
+    bond_types : list of str
+        Bond type for each pair, one of ``"S"``, ``"D"``, ``"T"``, or
+        ``"A"`` (single, double, triple, aromatic).
+
+    Returns
+    -------
+    None
     """
 
     path = Path(filename).resolve()
