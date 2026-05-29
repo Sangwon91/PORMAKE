@@ -34,7 +34,7 @@ Thank you for your valuable contribution @aniruddha-seal !
 
 [MOF Decomposer README](./pormake/experimental/decomposer/README.md)
 
-<image src="doc/decomposer.png" width="500px"></image>
+<image src="docs/assets/decomposer.png" width="500px"></image>
 
 ## Installation
 
@@ -153,9 +153,9 @@ You can also visualize the topology using `.view()` method.
 tbo.view()
 ```
 
-<img src="doc/tbo.png" width=400>
+<img src="docs/assets/tbo.png" width=400>
 
-In order to construct HKUST-1, copper paddle-wheel cluster and BTC linker are required.  You can load the building blocks from the database. All visual description of the building blocks can be found at [here](doc/building_blocks.pdf).
+In order to construct HKUST-1, copper paddle-wheel cluster and BTC linker are required.  You can load the building blocks from the database. All visual description of the building blocks can be found at [here](docs/assets/building_blocks.pdf).
 
 ```python
 # bb: budilding block.
@@ -172,7 +172,7 @@ N409.view()
 N10.view()
 ```
 
-<img src="doc/N409.png" width=350> <img src="doc/N10.png" width=350>
+<img src="docs/assets/N409.png" width=350> <img src="docs/assets/N10.png" width=350>
 
 Next, make `Builder` instance.
 
@@ -203,7 +203,7 @@ You can visualize constructed MOF using `.view()` method.
 HKUST1.view()
 ```
 
-<img src="doc/HKUST-1.png" width=400>
+<img src="docs/assets/HKUST-1.png" width=400>
 
 And save the HKUST-1 in `cif` format.
 
@@ -224,7 +224,7 @@ E41 = database.get_bb("E41")
 E41.view()
 ```
 
-<img src="doc/E41.png" width=400>
+<img src="docs/assets/E41.png" width=400>
 
 Make edge type to building block dictionary. Edge type is a tuple of the types of adjacent nodes: (`0`, `1`).
 
@@ -246,7 +246,7 @@ MOF.view()
 
 `E41` is inserted properly between `N409` and `N10`.
 
-<img src="doc/MOF.png" width=400>
+<img src="docs/assets/MOF.png" width=400>
 
 
 
@@ -261,7 +261,7 @@ N13 = database.get_bb("N13")
 N13.view()
 ```
 
-<img src="doc/N13.png" width=400>
+<img src="docs/assets/N13.png" width=400>
 
 Before the next step, you should know the equivalence of the following two approaches for MOF construction.
 
@@ -297,7 +297,7 @@ MOF = builder.build(topology=tbo, bbs=bbs)
 MOF.view()
 ```
 
-<img src="doc/chimera.png" width=400>
+<img src="docs/assets/chimera.png" width=400>
 
 ### 4. Calculation of RMSD between node and building block
 
@@ -310,7 +310,7 @@ N198 = database.get_bb("N198")
 N198.view()
 ```
 
-<img src="doc/N198.PNG" width=400>
+<img src="docs/assets/N198.PNG" width=400>
 
 Load two test topologies: `pcu` and `acs`. `pcu` has nodes of octahedron shape and `acs` has nodes of triangular prism shape. Each topology has single node type (`0`).
 
@@ -381,7 +381,7 @@ pcu_local_0 = pcu.unique_local_structures[0]
 pcu_local_0.view()
 ```
 
-<img src="doc/oct.png" width=350> <img src="doc/oct_2.png" width=350>
+<img src="docs/assets/oct.png" width=350> <img src="docs/assets/oct_2.png" width=350>
 
 ```python
 # 0 is the type of node.
@@ -390,7 +390,7 @@ acs_local_0 = acs.unique_local_structures[0]
 acs_local_0.view()
 ```
 
-<img src="doc/tri.png" width=350> <img src="doc/tri_2.png" width=350>
+<img src="docs/assets/tri.png" width=350> <img src="docs/assets/tri_2.png" width=350>
 
 Make `Locator` instance.
 
@@ -472,7 +472,7 @@ for bb in node_bbs.values():
     bb.view()
 ```
 
-<img src="doc/N3.png" width=350> <img src="doc/N114.png" width=350>
+<img src="docs/assets/N3.png" width=350> <img src="docs/assets/N114.png" width=350>
 
 Check RMSD values.
 
@@ -495,7 +495,7 @@ edge_bbs = {(0, 1): database.get_bb("E41")}
 edge_bbs[(0, 1)].view()
 ```
 
-<img src="doc/E41.png" width=400>
+<img src="docs/assets/E41.png" width=400>
 
 Make MOF.
 
@@ -504,7 +504,7 @@ MOF = builder.build_by_type(topology=ith, node_bbs=node_bbs, edge_bbs=edge_bbs)
 MOF.view()
 ```
 
-<img src="doc/LS_MOF.png" width=350> <img src="doc/LS_MOF_2.png" width=350>
+<img src="docs/assets/LS_MOF.png" width=350> <img src="docs/assets/LS_MOF_2.png" width=350>
 
 ### 6. Custom building block
 
