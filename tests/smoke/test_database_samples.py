@@ -24,6 +24,12 @@ SAMPLE_BBS = [
     "E50",
     "E110",
     "E180",
+    # High coordination numbers (parse larger/denser xyz files).
+    "N233",  # CN 7
+    "N103",  # CN 8 (largest BB group)
+    "N401",  # CN 9
+    "N104",  # CN 10
+    "N22",   # CN 24 (432 atoms)
 ]
 
 
