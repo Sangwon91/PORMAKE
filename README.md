@@ -5,12 +5,7 @@
 >
 > [Please cite me if you find it useful!](https://pubs.acs.org/doi/abs/10.1021/acsami.1c02471)
 
-Development Roadmap (updated 2026.05):
-- [x] Change of project management tool: `poetry` to `uv`
-- [ ] Simple web application for the generation of porous materials
-- [x] Enrich the code with descriptive docstrings (NumPy-style docstrings across `src/pormake`)
-- [x] Fortify the project by implementing comprehensive test code (`pytest` unit, integration, and smoke tests)
-- [ ] Development of an enhanced algorithm for improved placement of edge building blocks (considering symmetry)
+> **Roadmap:** planned features and research directions are tracked in [ROADMAP.md](./ROADMAP.md).
 
 ## Release Note
 
