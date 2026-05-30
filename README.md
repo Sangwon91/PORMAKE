@@ -5,14 +5,21 @@
 >
 > [Please cite me if you find it useful!](https://pubs.acs.org/doi/abs/10.1021/acsami.1c02471)
 
-Development Roadmap (updated 2024.12.20):
-1. Change of project management tool: `poetry` to `uv`
-1. Simple web application for the generation of porous materials
-1. Enrich the code with descriptive docstrings.
-1. Fortify the project by implementing comprehensive test code.
-1. Development of an enhanced algorithm for improved placement of edge building blocks (considering symmetry).
+Development Roadmap (updated 2026.05):
+- [x] Change of project management tool: `poetry` to `uv`
+- [ ] Simple web application for the generation of porous materials
+- [x] Enrich the code with descriptive docstrings (NumPy-style docstrings across `src/pormake`)
+- [x] Fortify the project by implementing comprehensive test code (`pytest` unit, integration, and smoke tests)
+- [ ] Development of an enhanced algorithm for improved placement of edge building blocks (considering symmetry)
 
 ## Release Note
+
+See [CHANGELOG.md](./CHANGELOG.md) for the full version history.
+
+#### Version: `0.2.3`
+
+**Fixed**: relaxed the `pymatgen` version constraint (removed the `<2024.0.0` upper bound), resolving installation conflicts on Python 3.12 ([#36](https://github.com/Sangwon91/PORMAKE/issues/36)). This release also adds NumPy-style docstrings, a `pytest` test suite, and automated PyPI releases via GitHub Actions.
+
 #### New fork
 [Repository URL](https://github.com/geonho42/PORMAKE)
 
@@ -565,7 +572,7 @@ bb = pm.BuildingBlock('N10.xyz')
 ```
 
 ## Contributions
-This project is managed through [`uv`](https://docs.astral.sh/uv/). It is strongly recommended to use `uv` for development. Additionally, support for Python versions below `3.10` will be discontinued in the future, so it is recommended to use Python `3.10` or higher. Below are examples of commands used when developing with `uv`.
+This project is managed through [`uv`](https://docs.astral.sh/uv/). It is strongly recommended to use `uv` for development. Additionally, support for Python versions below `3.10` has been discontinued, so Python `3.10` or higher is required. Below are examples of commands used when developing with `uv`.
 
 ### 1. Install required libraries
 ```bash
@@ -576,7 +583,10 @@ uv sync
 
 ### 2. Apply pre-commit before commit
 ```bash
-uvx pre-commit
+# Install the git hook so checks run automatically on every commit.
+uvx pre-commit install
+# (optional) run all hooks against the whole repository once.
+uvx pre-commit run --all-files
 ```
 
 ### 3. Install new libraries for new functionalities
