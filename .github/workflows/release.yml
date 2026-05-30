@@ -1,0 +1,37 @@
+name: Release to PyPI
+
+on:
+  push:
+    tags:
+      - "v*" # v로 시작하는 모든 태그 (v0.2.3, v1.0.0 ...)
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # OIDC Trusted Publishing에 필수 (이게 빠지면 인증 실패)
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv and Python 3.12
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify tag matches pyproject version
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PROJ_VERSION=$(uv version --short)
+          echo "tag=$TAG_VERSION  project=$PROJ_VERSION"
+          if [ "$TAG_VERSION" != "$PROJ_VERSION" ]; then
+            echo "::error::tag($TAG_VERSION)와 pyproject.toml version($PROJ_VERSION)이 일치하지 않습니다."
+            exit 1
+          fi
+
+      - name: Build
+        run: uv build
+
+      - name: Publish to PyPI (Trusted Publishing)
+        run: uv publish
