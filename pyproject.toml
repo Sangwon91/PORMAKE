@@ -1,6 +1,6 @@
 [project]
 name = "pormake"
-version = "0.2.2"
+version = "0.2.3"
 description = "Python library for the construction of porous materials using topology and building blocks"
 license = "MIT"
 readme = "README.md"
