@@ -32,6 +32,15 @@ axial rotation for a class of cases and is a valuable starting point. It is not
 yet clear that a rule-based fix alone is complete across all topologies and
 linker symmetries.
 
+**Investigation.**
+A detailed investigation — precise code diagnosis (the 2-point Kabsch twist
+degeneracy), prior-art analysis (the geonho42 fork and external tools such as
+ToBaCCo, AuToGraFS, MOFBuilder), an adversarial comparison of three candidate
+algorithms, and a recommended per-edge numerical approach (a
+relaxation-surviving node-frame seed plus a 1-D axial optimization that extends
+`Locator.locate`) — is written up in
+[docs/research/edge-linker-twist-investigation.md](./docs/research/edge-linker-twist-investigation.md).
+
 **Proposed approach.**
 A two-stage scheme:
 1. **Rule-based initial assignment** — derive each edge's orientation from the
