@@ -8,16 +8,18 @@ authors = [
     { name = "Sangwon Lee", email = "lsw91.main@gmail.com" }
 ]
 classifiers = [
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11.5"
 dependencies = [
     "ase>=3.23.0",
     "jax[cpu]>=0.4.13",
     "networkx>=3.1",
+    "pillow>=13.0.0",
     "pymatgen>=2023.8.10",
+    "soupsieve>=4.0.0",
 ]
 
 [project.urls]
